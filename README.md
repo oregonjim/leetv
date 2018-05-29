@@ -204,20 +204,19 @@ if you like, as long as the totals add up correctly.  The filenames and
 durations for all these 'canned' videos are store at the top of settings.ini.
 
   Two other 'canned' videos, news.mp4 and weather.mp4, can be created dynamically
-every hour by the utility 'ltv'getnewsweather'.  Note that you will have to edit the
+every hour by the utility 'ltv-getnewsweather'.  Note that you will have to edit the
 source of this program somewhat to point it to the right sources for your
 preferred news and weather.  See the file itself for details.  There is a 'hard'
 way and an 'easy' way documented...
 
   Now, if you don't want to bother at all with this canned video business, you
-can easily disable it all by commenting out a couple lines of code in leetv.
-Look for add_bumper_video(), add_news_video(), add_weather_video(), and
-add_fill_video().  The downside is that you'll be playing lots of commercials
+can easily disable it all by running leetv with the --exclude option.
+The downside is that you'll be playing lots of commercials
 in unprogrammed slots, you won't get hourly news and weather updates, and your
 TV station won't look as 'professional' - but that may not matter to you.
 
   OK, it's time to test your setup.  run 'leetv -v' from the command line and see
-whar happens.  If all goes well, you'll see a bunch of info messages as
+what happens.  If all goes well, you'll see a bunch of info messages as
 the playlist is created, followed by the launch of mpv to start playing.
 A log file will also be found in the log directory.  You can add '-l debug'
 for more verbose diagnostics.
