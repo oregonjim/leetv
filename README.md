@@ -69,7 +69,7 @@ goes for MacOS using macports or homebrew, or Windows using Cygwin.
 This will create the configuration directory tree inside your 'HOME'
 directory and most of the necessary files within it.  Here is a picture
 of what you should have:
-
+```
 ~/.leetv:
     bumper.mp4      # shown at start of every time slot
     reset.mp4       # shown in place of bumper.mp4 whenever
@@ -105,7 +105,7 @@ of what you should have:
     fri.ini
     sat.ini
     sun.ini
-
+```
   Next, create all your media list files using ltv-listmedia.  All of
 the utilities support a '--help' flag to show basic usage.  An example:
 
@@ -136,7 +136,7 @@ when you want 'binge watch' mode - the same series in more than one time slot in
 day.  In this case, the FIRST time slot specifies linear or random for 'seq', the second
 slot specifies the numeric value '2', the third slot is '3', and so on.  Here are some
 examples:
-
+```
   [0000]
   series = MidnightMystery
   seq = linear
@@ -160,7 +160,7 @@ examples:
   [1800]        # (blank slot)
   series =
   seq =
-
+```
   (Of course, a full daily schedule will have 48 of these 1/2 hour slots.  They were
   created automatically the first time you ran leetv.  While you can leave slots
   blank, you cannot delete them.  Each schedule file must have all 48 slots present.)
@@ -189,7 +189,7 @@ automatically on the hour by 'ltv-getnewsweather' (if you have added it as a cro
 see the comments in the file itself for details).
 
   There is one trick to remember when creating these videos:
-
+```
   bumper.mp4 + news.mp4 + fill.mp4 must == 30 minutes
   bumper.mp4 + weather.mp4 + fill.mp4 must == 30 minutes
 
@@ -197,7 +197,7 @@ see the comments in the file itself for details).
    bumper.mp4           = 5 seconds
    news.mp4/weather.mp4 = 15 seconds
    fill.mp4             = 1780 seconds (1/2 hr - 20 seconds)
-
+```
   This ensures that 'blank' (unprogrammed) slots are filled exactly and don't
 waste a bunch of commercials to fill unused time.  You can change the times
 if you like, as long as the totals add up correctly.  The filenames and
