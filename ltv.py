@@ -94,13 +94,13 @@ class Tv:
     schedfiles = ('mon.ini', 'tue.ini', 'wed.ini', 'thu.ini',
                   'fri.ini', 'sat.ini', 'sun.ini')
 
-    def __init__(self, logger):
+    def __init__(self, logger, exclude):
         """ Tv object constructor """
         self.log = logger
 
         # go to the main directory, check tree for validity
         self.directory = os.path.join(os.getenv('HOME'), '.leetv')
-        self._check_prerequisites(self.directory)
+        self._check_prerequisites(self.directory, exclude)
 
         # get list of used commercials and remove them from the master commercial list
         used_filename = os.path.join(self.directory, 'config', 'used.lst')
@@ -122,7 +122,7 @@ class Tv:
             self.log.debug('Total used commercials {}'.format(len(self.used)))
             self.log.debug('After commercial removal: {}'.format(len(self.cn)))
 
-    def _check_prerequisites(self, directory):
+    def _check_prerequisites(self, directory, exclude):
         """ sanity check for minimum required LeeTV configuration files """
         met = True
 
@@ -213,40 +213,41 @@ class Tv:
             # preload list of commercials since we'll be using it often
             self.cn, self.ct = self.get_filelist(cfile, shuffle=True)
 
-        # bumper video shown at the start of every time slot
-        sbv = os.path.join(self.directory, self.bumper_video_name)
-        self.bumper_video = urllib.parse.quote(sbv)
-        if not os.path.isfile(sbv):
-            met = False
-            self.log.warning("{} does not exist!".format(sbv))
+        if not exclude:
+            # bumper video shown at the start of every time slot
+            sbv = os.path.join(self.directory, self.bumper_video_name)
+            self.bumper_video = urllib.parse.quote(sbv)
+            if not os.path.isfile(sbv):
+                met = False
+                self.log.warning("{} does not exist!".format(sbv))
 
-        # bumper video shown when commercial pool is reset
-        srv = os.path.join(self.directory, self.reset_video_name)
-        self.reset_video = urllib.parse.quote(srv)
-        if not os.path.isfile(srv):
-            met = False
-            self.log.warning("{} does not exist!".format(srv))
+            # bumper video shown when commercial pool is reset
+            srv = os.path.join(self.directory, self.reset_video_name)
+            self.reset_video = urllib.parse.quote(srv)
+            if not os.path.isfile(srv):
+                met = False
+                self.log.warning("{} does not exist!".format(srv))
 
-        # weather video
-        swv = os.path.join(self.directory, self.weather_video_name)
-        self.weather_video = urllib.parse.quote(swv)
-        if not os.path.isfile(swv):
-            met = False
-            self.log.warning("{} does not exist!".format(swv))
+            # weather video
+            swv = os.path.join(self.directory, self.weather_video_name)
+            self.weather_video = urllib.parse.quote(swv)
+            if not os.path.isfile(swv):
+                met = False
+                self.log.warning("{} does not exist!".format(swv))
 
-        # news video
-        snv = os.path.join(self.directory, self.news_video_name)
-        self.news_video = urllib.parse.quote(snv)
-        if not os.path.isfile(snv):
-            met = False
-            self.log.warning("{} does not exist!".format(snv))
+            # news video
+            snv = os.path.join(self.directory, self.news_video_name)
+            self.news_video = urllib.parse.quote(snv)
+            if not os.path.isfile(snv):
+                met = False
+                self.log.warning("{} does not exist!".format(snv))
 
-        # fill video shown whenever the schedule has a blank slot
-        sfv = os.path.join(self.directory, self.fill_video_name)
-        self.fill_video = urllib.parse.quote(sfv)
-        if not os.path.isfile(sfv):
-            met = False
-            self.log.warning("{} does not exist!".format(sfv))
+            # fill video shown whenever the schedule has a blank slot
+            sfv = os.path.join(self.directory, self.fill_video_name)
+            self.fill_video = urllib.parse.quote(sfv)
+            if not os.path.isfile(sfv):
+                met = False
+                self.log.warning("{} does not exist!".format(sfv))
 
         if not met:
             self.log.error('Please check the LeeTV documentation for proper setup.')
