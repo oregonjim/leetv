@@ -49,7 +49,6 @@ import json
 import re
 
 from leeutils import *
-from ltvprobe import FFProbe
 
 
 basetv = "/mnt/tv"
@@ -274,15 +273,6 @@ def duration(file, precision=3):
     duration = float(meta['format']['duration'])
     duration = round(duration, precision) * 10 ** precision
     return int(duration)
-
-
-def new_duration(file):
-    meta = FFProbe(file)
-    for s in meta.streams:
-        if s.isVideo():
-            d = s.durationSeconds()
-            return int(round(d, 3) * 1000)
-    return None
 
 
 def is_video(file):
