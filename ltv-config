@@ -30,6 +30,12 @@
 #  (alternatively, a simple text editor can be used
 #  on ~/.leetv/sched/*.ini and ~/.leetv/config/settings.ini)
 #
+#
+#  NOTE NOTE NOTE *************************************
+#                 This is mainly just a 'stub' for now.
+#                 Nothing to see yet, move along...
+#                 *************************************
+#
 #  Last update: 2018-05-28
 #
 import sys
