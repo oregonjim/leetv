@@ -1,11 +1,33 @@
 # leetv
-A personal television station designed for 24/7 unattended operation
+A personal television station designed for 24/7 unattended operation.
 
-NOTE:  This is a fully working program (I've been using it 24/7 for several
-months now).  However, I have not finished the documentation nor have I added
+Works with any operating system that supports Python 3.x and VLC or mpv.
+
+Two usage scenarios are possible:
+
+1. Automated - A dedicated computer, connected to a TV, is set up to run leetv once
+a day as a cron job (Linux), LaunchAgent (MacOS X), or Task Scheduler task
+(Windows).  Your scheduled shows are broadcast all day long, every day,
+just like a real network TV station.  The computer need not be particularly
+powerful - all it needs to do is be able to run VLC or mpv smoothly.  I have
+even run it sucessfully on a Raspberry Pi 3 (though I had to build a custom
+version of VLC with GPU hw acceleration in order to prevent overheating).  Any
+PC made in the last 10 or so years will do fine.  Internet connectivity
+is not required unless you want to have the (optional) hourly news and weather
+updates.
+2. On demand - you can run leetv on demand from your own PC.  It will behave
+as though you have just 'turned on' the TV and will start playing whatever
+is scheduled for 'now'.  You can optionally specify a start time and leetv will
+pretend that it is running at that time in the schedule (in case you missed
+your favorite show).
+
+
+NOTE:  While this is a fully working program (I've been using it 24/7 for several
+months now), I have not finished the documentation nor have I added
 the kind of exception handling necessary for a 'general public use' type of
 application.  Also missing is an automated 'setup.py' installer.  These elements
-will be added as time allows.
+will be added as time allows.  If you can edit a few simple text files and
+are comfortable with the command line, you can get it up and running.
 
   LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
 under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
@@ -54,8 +76,8 @@ and hard drive access delays can cause a bit of drift.  I have noticed
 up to a minute or two of total drift over a 24 hour period,
 
 
-Quickstart (until the documentation is finished):
--------------------------------------------------
+Quickstart :
+------------
 
   Clone this repository.  Optionally add it to your $PATH.
 
@@ -66,9 +88,10 @@ are included in the repositories of most Linux distributions.  Same
 goes for MacOS using macports or homebrew, or Windows using Cygwin.
 
   The next thing to do is to run 'leetv' once from the command line.
-This will create the configuration directory tree inside your 'HOME'
-directory and most of the necessary files within it.  Here is a picture
-of what you should have:
+You will get an error message, but this will create the configuration
+directory tree inside your 'HOME' directory and MOST of the necessary
+files within it.  Here is a picture of what you should have after completing
+this quickstart:
 ```
 ~/.leetv:
     bumper.mp4      # shown at start of every time slot
@@ -99,8 +122,8 @@ of what you should have:
                     # the duration of each video in milliseconds
 ~/.leetv/sched:
     mon.ini         # each file contains 48 1/2 hour time slots
-    tue.ini         # that you fill in with your desired schedule
-    wed.ini
+    tue.ini         # that you fill in with your desired
+    wed.ini         # viewing schedule
     thu.ini
     fri.ini
     sat.ini
@@ -121,6 +144,9 @@ created recursively, so a subdirectory named 'Season 1' will come before another
 subdirectory named 'Season 2'.  This lends itself naturally to the way most people
 organize their media files, but it helps to be aware of it.
 
+Note that you must create one media list file named 'Commercials'.  While you will
+never specify this file explicitly in the schedule, leetv will draw upon this list
+to fill empty time between scheduled programs.
 
   Next, edit the .ini files in ~/.leetv/sched/ to reflect your desired schedule.  I
 am working on a graphical configuration editor, but it's not finished yet.  Besides,
@@ -131,7 +157,7 @@ are two fields: series and seq.  Series is the name of one of your media lists c
 above (e.g. 'MyShow', without the .lst extension).  You can leave slots blank if no
 programming is desired at that time (the 'fill' video will be shown).  The 'seq' field
 can be set to 'linear', 'random', or a numeric sequence.  Linear means that your shows
-will be played in order.  Random will pick a random episode.  A numeric sequence is for
+will be played in order, day after day.  Random will pick a random episode.  A numeric sequence is for
 when you want 'binge watch' mode - the same series in more than one time slot in a given
 day.  In this case, the FIRST time slot specifies linear or random for 'seq', the second
 slot specifies the numeric value '2', the third slot is '3', and so on.  Here are some
@@ -158,12 +184,12 @@ examples:
   seq = 3
 
   [1800]        # (blank slot)
-  series =
-  seq =
+  series = blank
+  seq = linear  @ (can be anything)
 ```
   (Of course, a full daily schedule will have 48 of these 1/2 hour slots.  They were
   created automatically the first time you ran leetv.  While you can leave slots
-  blank, you cannot delete them.  Each schedule file must have all 48 slots present.)
+  blank, you should not delete them.  Each schedule file must have all 48 slots present.)
 
   A special case is the series named 'MovieNight' (by default - this can be changed
 in settings.ini).  If you specify this name for the series, leetv will keep track of all
