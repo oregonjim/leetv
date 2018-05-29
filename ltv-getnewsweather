@@ -1,0 +1,256 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-getnewsweather
+#
+#  Get current news and weather, create hourly videos for leetv
+#
+#  NOTE:  Each section of the code (news/weather) has an
+#         'easy' method (webppage screenshot grab) and a
+#         'harder' method (parse html/json).  Choose
+#         the 'easy' way by changing the two instances of
+#         'if False' to 'if True', and edit the urls to
+#         reflect your preferred news and weather sources.
+#
+#  This is designed to be run as a cron job
+#
+#  "ltv-getnewsweather -n" at quarter till every hour
+#  "ltv-getnewsweather -w" at quarter past every hour
+#
+#  It can also be run on demand at any time
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import argparse
+import requests
+import subprocess
+import json
+from datetime import date, datetime
+
+from PIL import Image, ImageDraw, ImageFont
+from bs4 import BeautifulSoup
+from selenium.webdriver import Chrome
+from pyvirtualdisplay import Display
+
+from leeutils import *
+
+
+def main(weather, news, verbose):
+
+    if verbose:
+        log = Log(level='INFO')
+    else:
+        log = Log(level='WARNING')
+
+    if not weather and not news:
+        log.error("Please select weather (-w) or news (-n) or both (-w -n)")
+
+    os.chdir(get_script_directory())
+
+    dir = os.path.join(os.getenv('HOME'), '.leetv')
+    if not os.path.exists(dir):
+        log.error("Directory {} does not exist".format(os.path.abspath(dir)))
+
+    if weather:
+        # this section will grab a jpg weather picture from a web page.
+        # no API key needed.
+        if False:
+            # get 7-day forecast image from KPTV
+            url = "http://lmgcorporate.com/kptv/weather/ibs_web_7-day.jpg"
+            log.info('Downloading page {}...'.format(url))
+            res = requests.get(url)
+            res.raise_for_status()
+            # save as a jpg file
+            with open('weather.jpg', 'wb') as pic:
+                pic.write(res.content)
+        # this section will parse the json data from Weather Underground.
+        # requires your own API key (stored in 'key.txt').
+        else:
+            with open('key.txt', 'r') as fp:
+                key = fp.readline().rstrip()
+            url = 'http://api.wunderground.com/api/' + key + '/forecast10day/q/OR/Lebanon.json'
+            filename = 'weather.json'
+            log.info('Downloading page {}...'.format(url))
+            res = requests.get(url)
+            res.raise_for_status()
+            j = ''
+            # save
+            with open(filename, 'wb') as fp:
+                fp.write(res.content)
+            with open(filename, 'rb') as fp:
+                for line in fp.readlines():
+                    j += line.decode('utf-8')
+            output = json.loads(j)
+            today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
+            base = Image.open('weatherbase.jpg').convert('RGBA')
+            txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
+            fnt = ImageFont.truetype('Glowworm-Regular.ttf', 80)
+            fnt2 = ImageFont.truetype('VeraBd.ttf', 30)
+            d = ImageDraw.Draw(txt)
+            d.text((int(base.size[0] * .05), 60), "LeeTV Weather", font=fnt, align='center', fill=(64, 0, 64, 220))
+            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 0, 64, 220))
+            d.text((int(base.size[0] * .15), int(base.size[1] * .85)), today, font=fnt, align='center', fill=(64, 0, 64, 220))
+            x = (base.size[0]-80) // 7
+            y = int(base.size[1] * .4)
+            for i in range(0, 7):
+                w = output['forecast']['simpleforecast']['forecastday'][i]
+                day = w['date']['weekday_short']
+                high = w['high']['fahrenheit']
+                low = w['low']['fahrenheit']
+                cond = w['conditions']
+                hum = w['avehumidity']
+                d.text((x * i + 40, y - 40), day, font=fnt, fill=(32, 80, 80, 220))
+                d.text((x * i + 40, y + 80), high, font=fnt, fill=(255, 255, 128, 220))
+                d.text((x * i + 40, y + 160), low, font=fnt, fill=(64, 64, 128, 220))
+                d.text((x * i + 40, y + 280), cond, font=fnt2, fill=(0, 0, 0, 220))
+                d.text((x * i + 40, y + 360), str(hum) + '%', font=fnt2, fill=(0, 80, 0, 220))
+            for i in range(0, 2):
+                desc = output['forecast']['txt_forecast']['forecastday'][i]['fcttext']
+                titl = output['forecast']['txt_forecast']['forecastday'][i]['title']
+                d.text((x + 40, y - 220 + (i * 80)), titl, font=fnt2, fill=(0, 0, 0, 220))
+                d.text((x + 320, y - 220 + (i * 80)), desc, font=fnt2, fill=(0, 0, 0, 220))
+
+            out = Image.alpha_composite(base, txt)
+            # out.show()
+            out.save('weather.png')
+
+        log.info('Converting image...')
+        # convert jpg to have even height/width
+        res = subprocess.Popen(' '.join(['convert',
+                                         'weather.png',
+                                         '-resize 1280x800!',
+                                         'weather2.png',
+                                         ]), shell=True)
+        res.wait()
+
+        log.info('Generating video...')
+        # create bumper video with weather image
+        res = subprocess.Popen(' '.join(['ffmpeg',
+                                         '-loop 1',
+                                         '-i weather2.png',
+                                         '-i weather.mp3',
+                                         '-c:v libx264',
+                                         '-t 15',
+                                         '-y',
+                                         '-loglevel quiet',
+                                         '-pix_fmt yuv420p',
+                                         os.path.join(dir, 'weather.mp4')
+                                         ]), shell=True)
+        res.wait()
+
+    if news:
+        # this section will just grab a screenshot of a web page
+        # advantage - super easy (no parsing html data), but not great to look at
+        # on a TV screen from across the room...
+        if False:
+            # url = 'https://www.usatoday.com'
+            # url = 'http://www.kezi.com/news/national/'
+            # url = 'http://kval.com/news/nation-world'
+            # url = 'https://news.google.com/news/headlines?hl=en&gl=US&ned=us'
+            # url = 'http://www.bbc.com/news'
+            url = 'https://www.foxnews.com/'
+            filename = 'news.png'
+            with Display(visible=0, size=(2112, 1188)) as dsp:
+                browser = Chrome()
+                # browser.maximize_window()
+                # browser.fullscreen_window()
+                browser.set_window_size(1920, 1080)
+                log.info('Downloading page {}...'.format(url))
+                try:
+                    browser.get(url)
+                    browser.get_screenshot_as_file(filename)
+                finally:
+                    browser.quit()
+        # this section will parse the html to extract headlines
+        # for a custom news feed.  Reuires you to read the page
+        # source in html and figure out how to parse it.  Can
+        # break if the publisher changes their format.
+        else:
+                res = requests.get('https://www.foxnews.com/')
+                articles = []
+                if (res.status_code == 200):
+                    soup = BeautifulSoup(res.content, 'html.parser')
+                    l = soup.find_all('h2', class_='title')
+                    for article in l:
+                        x = article.find('a')
+                        if str(x).find('video') == -1:
+                            articles.append(article.get_text())
+
+                today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
+                base = Image.open('newsbase.jpg').convert('RGBA')
+                txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
+                fnt = ImageFont.truetype('Glowworm-Regular.ttf', 80)
+                fnt2 = ImageFont.truetype('VeraBd.ttf', 40)
+                d = ImageDraw.Draw(txt)
+
+                d.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
+                d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255,  220))
+                d.text((int(base.size[0] * .15), int(base.size[1] * .85)),
+                       today, font=fnt, align='center', fill=(64, 255, 255, 220))
+
+                x = int(base.size[0] * .1)
+                y = (base.size[1] - 320) // 10
+
+                for i in range(0, 5):
+                    d.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
+
+                out = Image.alpha_composite(base, txt)
+                out.save('news.png')
+
+        log.info('Converting image...')
+        # convert jpg to have even height/width
+        res = subprocess.Popen(' '.join(['convert',
+                                         'news.png',
+                                         '-resize 1920x1080!',
+                                         'news2.png',
+                                         ]), shell=True)
+        res.wait()
+
+        log.info('Generating video...')
+        # create bumper video with news image
+        res = subprocess.Popen(' '.join(['ffmpeg',
+                                         '-loop 1',
+                                         '-i news2.png',
+                                         '-i news.mp3',
+                                         '-c:v libx264',
+                                         '-t 15',
+                                         '-y',
+                                         '-loglevel quiet',
+                                         '-pix_fmt yuv420p',
+                                         os.path.join(dir, 'news.mp4')
+                                         ]), shell=True)
+        res.wait()
+
+    return 0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Create leetv news and weather bumper video")
+    parser.add_argument("-w", "--weather", action="store_true", help="get weather, create weather video")
+    parser.add_argument("-n", "--news", action="store_true", help="get news, create news video")
+    parser.add_argument("-v", "--verbose", action="store_true", help="verbose")
+    args = parser.parse_args()
+    weather = args.weather
+    news = args.news
+    verbose = args.verbose
+    sys.exit(main(weather, news, verbose))

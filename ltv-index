@@ -1,0 +1,84 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-index
+#
+#  A leetv utility program
+#
+#  Show list of file indices from a media list file
+#
+#  Useful to determine which episode was played last
+#  when looking at ~/.leetv/config/settings.ini, or to
+#  start a series at a specific episode other than
+#  season 1, episode 1 (index 0).
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import argparse
+import urllib.parse
+
+from leeutils import Log
+
+
+def get_filelist(filename, shuffle=False):
+    f = list()
+    t = list()
+
+    if not os.path.isfile(filename):
+        print('{} does not exist!'.format(filename))
+        sys.exit(1)
+
+    with open(filename, 'r') as fp:
+        lst = fp.readlines()
+        if shuffle:
+            random.shuffle(lst)
+        for x in lst:
+            a, b = x.split(':')
+            f.append(a.strip())
+            t.append(b.strip())
+        return (f, t)
+
+
+def main(name):
+
+    # create a LOG object
+    log = Log(level='INFO')
+
+    directory = os.path.join(os.getenv('HOME'), '.leetv')
+    os.chdir(directory)
+    series = name
+    series_file = os.path.join('media', series + '.lst')
+    fn, ft = get_filelist(series_file)
+
+    for i, filen in enumerate(fn):
+        log.info("{} : {}".format(i, urllib.parse.unquote(filen)))
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="List media files with index")
+    parser.add_argument("-n", "--name", default="Commercials", help="name of the filelist")
+    args = parser.parse_args()
+    name = args.name
+    sys.exit(main(name))

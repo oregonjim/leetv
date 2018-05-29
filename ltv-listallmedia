@@ -1,0 +1,426 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-listallmedia
+#
+#  A leetv utility program
+#
+#  Last update: 2018-05-28
+#
+#  Create all media file lists for leetv.  Also warns of directories
+#  not present in the list.
+#
+#  NOTE NOTE NOTE: the tables must be customized for your particular
+#  collection of media files.  Alternatively, you can use another program,
+#  ltv-listmedia, to generate/update individual media lists.  This program
+#  is more useful for large, frequently updated collections.
+#
+#  File format:  videoFilename : DurationInMilliseconds <newline>
+#
+#  File names are pre-parsed for use in various playlist formats
+#
+#  USAGE:    ltv-listallmedia [-v]
+#
+import sys
+import os
+import argparse
+import urllib.parse
+import subprocess
+import json
+import re
+
+from leeutils import *
+from ltvprobe import FFProbe
+
+
+basetv = "/mnt/tv"
+basecartoon = "/mnt/tv"
+basemovie = "/mnt/movies"
+
+movielist = (
+             ["Movies/", "MovieNight"],
+             ["More Movies/", "MoreMovies"],
+             ["Holiday/", "HolidayMovies"]
+             )
+
+tvlist = (
+            ["Television/Addams Family/", "AddamsFamily"],
+            ["Television/Alfred Hitchcock Presents/", "AlfredHitchcock"],
+            ["Television/All In The Family/", "AllInTheFamily"],
+            ["Television/America's Funniest Home Videos/", "AFV"],
+            ["Television/Andy Griffith/", "AndyGriffith"],
+            ["Television/Banana Splits/", "BananaSplits"],
+            ["Television/Barney Miller/", "BarneyMiller"],
+            ["Television/Batman/", "Batman"],
+            ["Television/Battlestar Galactica/", "BattlestarGalactica"],
+            ["Television/Baywatch/", "Baywatch"],
+            ["Television/Beat the Clock/", "BeatTheClock"],
+            ["Television/Benson/", "Benson"],
+            ["Television/Beverly Hillbillies/", "BeverlyHillbillies"],
+            ["Television/Bewitched/", "Bewitched"],
+            ["Television/Big Bang Theory/", "BigBangTheory"],
+            ["Television/Bizarre/", "Bizarre"],
+            ["Television/Bob Newhart/", "BobNewhart"],
+            ["Television/Bosom Buddies/", "BosomBuddies"],
+            ["Television/Brady Bunch/", "BradyBunch"],
+            ["Television/Cheers/", "Cheers"],
+            ["Television/Chico and the Man/", "ChicoAndTheMan"],
+            ["Television/CHiPs/", "Chips"],
+            ["Television/Christmas Shows/", "ChristmasShows"],
+            ["Television/Columbo/", "Columbo"],
+            ["Television/Commercials/", "Commercials"],
+            ["Television/Computer Chronicles/", "ComputerChronicles"],
+            ["Television/Daniel Boone/", "DanielBoone"],
+            ["Television/Dennis the Menace/", "DennisTheMenace"],
+            ["Television/Dick Van Dyke/", "DickVanDyke"],
+            ["Television/Diff'rent Strokes/", "DifferentStrokes"],
+            ["Television/Dinosaurs/", "Dinosaurs"],
+            ["Television/Donny and Marie/", "DonnyAndMarie"],
+            ["Television/Dukes of Hazzard/", "DukesOfHazzard"],
+            ["Television/Everybody Loves Raymond/", "EverybodyLovesRaymond"],
+            ["Television/Facts of Life/", "FactsOfLife"],
+            ["Television/Family Matters/", "FamilyMatters"],
+            ["Television/Family Ties/", "FamilyTies"],
+            ["Television/Fantasy Island/", "FantasyIsland"],
+            ["Television/Fawlty Towers/", "FawltyTowers"],
+            ["Television/Flipper (1964)/", "Flipper"],
+            ["Television/Flying Nun/", "FlyingNun"],
+            ["Television/Frasier/", "Frasier"],
+            ["Television/Fresh Prince of Bel-Air/", "FreshPrince"],
+            ["Television/Friends/", "Friends"],
+            ["Television/Full House/", "FullHouse"],
+            ["Television/F Troop/", "FTroop"],
+            ["Television/Get Smart/", "GetSmart"],
+            ["Television/Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
+            ["Television/Gidget/", "Gidget"],
+            ["Television/Gilligan's Island/", "GilligansIsland"],
+            ["Television/Gomer Pyle USMC/", "GomerPyle"],
+            ["Television/Good Times/", "GoodTimes"],
+            ["Television/Green Acres/", "GreenAcres"],
+            ["Television/Growing Pains/", "GrowingPains"],
+            ["Television/Gunsmoke/", "Gunsmoke"],
+            ["Television/Happy Days/", "HappyDays"],
+            ["Television/Hee Haw/", "HeeHaw"],
+            ["Television/Hill Street Blues/", "HillStreetBlues"],
+            ["Television/Hogan's Heroes/", "HogansHeroes"],
+            ["Television/Home Improvement/", "HomeImprovement"],
+            ["Television/Honeymooners/", "Honeymooners"],
+            ["Television/Honey West/", "HoneyWest"],
+            ["Television/H.R. Pufnstuf/", "HRPufnstuf"],
+            ["Television/I Dream of Jeannie/", "IDreamOfJeannie"],
+            ["Television/King of Queens/", "KingOfQueens"],
+            ["Television/Knight Rider/", "KnightRider"],
+            ["Television/Kung Fu/", "KungFu"],
+            ["Television/Land of the Giants/", "LandOfTheGiants"],
+            ["Television/Last Man Standing (2011)/", "LastManStanding"],
+            ["Television/Laurel & Hardy/", "LaurelAndHardy"],
+            ["Television/Laverne & Shirley/", "LaverneAndShirley"],
+            ["Television/Leave It To Beaver/", "LeaveItToBeaver"],
+            ["Television/Little House on the Prairie/", "LittleHouseOnThePrairie"],
+            ["Television/Logan's Run/", "LogansRun"],
+            ["Television/Lost In Space/", "LostInSpace"],
+            ["Television/Love Boat/", "LoveBoat"],
+            ["Television/Lucy Show/", "LucyShow"],
+            ["Television/Manimal/", "Manimal"],
+            ["Television/Mary Tyler Moore/", "MaryTylerMoore"],
+            ["Television/MASH/", "MASH"],
+            ["Television/Match Game/", "MatchGame"],
+            ["Television/McHale's Navy/", "McHalesNavy"],
+            ["Television/Memories/", "Memories"],
+            ["Television/Misc/", "MiscTV"],
+            ["Television/Mission Impossible/", "MissionImpossible"],
+            ["Television/Mister Ed/", "MisterEd"],
+            ["Television/Mister Rogers/", "MisterRogers"],
+            ["Television/Monk/", "Monk"],
+            ["Television/Monty Python's Flying Circus/", "MontyPython"],
+            ["Television/Mork & Mindy/", "MorkAndMindy"],
+            ["Television/Mr Wizard/", "MrWizard"],
+            ["Television/Munsters/", "Munsters"],
+            ["Television/Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
+            ["Television/My Favorite Martian/", "MyFavoriteMartian"],
+            ["Television/My Three Sons/", "MyThreeSons"],
+            ["Television/Newhart/", "Newhart"],
+            ["Television/Odd Couple/", "OddCouple"],
+            ["Television/One Day at a Time/", "OneDayAtATime"],
+            ["Television/Partridge Family/", "PartridgeFamily"],
+            ["Television/Petticoat Junction/", "PetticoatJunction"],
+            ["Television/Phil Silvers Show/", "PhilSilvers"],
+            ["Television/Planet of the Apes/", "PlanetOfTheApes"],
+            ["Television/Police Squad/", "PoliceSquad"],
+            ["Television/Quark/", "Quark"],
+            ["Television/Rhoda/", "Rhoda"],
+            ["Television/Rockford Files/", "RockfordFiles"],
+            ["Television/Room 222/", "Room222"],
+            ["Television/Roots/", "Roots"],
+            ["Television/Smothers Brothers/", "SmothersBrothers"],
+            ["Television/Soap/", "Soap"],
+            ["Television/Space 1999/", "Space1999"],
+            ["Television/Star Trek TOS/", "StarTrek"],
+            ["Television/Survivors/", "Survivors"],
+            ["Television/Taxi/", "Taxi"],
+            ["Television/The Adventures of Ozzie and Harriet/", "OzzieAndHarriet"],
+            ["Television/The Best of the Dean Martin Show/", "DeanMartin"],
+            ["Television/The Carol Burnett Show/", "CarolBurnett"],
+            ["Television/The Golden Girls/", "GoldenGirls"],
+            ["Television/The Life of Riley (1953)/", "LifeOfRiley"],
+            ["Television/The Jackson 5 Variety Show/", "Jackson5"],
+            ["Television/The Office (US)/", "Office"],
+            ["Television/The Paper Chase/", "PaperChase"],
+            ["Television/The Price is Right/", "PriceIsRight"],
+            ["Television/The Starlost (1973)/", "Starlost"],
+            ["Television/Three's Company/", "ThreesCompany"],
+            ["Television/Three Stooges/", "ThreeStooges"],
+            ["Television/Thunderbirds/", "Thunderbirds"],
+            ["Television/Time Tunnel/", "TimeTunnel"],
+            ["Television/Tremors/", "Tremors"],
+            ["Television/Twilight Zone/", "TwilightZone"],
+            ["Television/UFO/", "UFO"],
+            ["Television/Undersea World of Jacques Cousteau/", "JacquesCousteau"],
+            ["Television/USA Up All Night/", "USAUpAllNight"],
+            ["Television/Waltons/", "Waltons"],
+            ["Television/Welcome Back Kotter/", "WelcomeBackKotter"],
+            ["Television/What's My Line/", "WhatsMyLine"],
+            ["Television/Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
+            ["Television/Wild Wild West/", "WildWildWest"],
+            ["Television/Wings/", "Wings"],
+            ["Television/WKRP In Cincinnati/", "WKRP"],
+            ["Television/Wonderful World of Disney/", "WWOD"],
+            ["Television/Zorro (1957)/", "Zorro"]
+            )
+
+cartoonlist = (
+                ["Cartoons/Bob's Burgers/", "BobsBurgers"],
+                ["Cartoons/Bump in the Night/", "BumpInTheNight"],
+                ["Cartoons/Chip and Dale/", "ChipAndDale"],
+                ["Cartoons/Fat Albert and the Cosby Kids/", "FatAlbert"],
+                ["Cartoons/Hillbilly Bears/", "HillbillyBears"],
+                ["Cartoons/Huckleberry Hound/", "HuckleberryHound"],
+                ["Cartoons/King of the Hill/", "KingOfTheHill"],
+                ["Cartoons/Looney Tunes/", "LooneyTunes"],
+                ["Cartoons/Marvin the Martian/", "MarvinTheMartian"],
+                ["Cartoons/Misc/", "MiscCartoons"],
+                ["Cartoons/Peanuts/", "Peanuts"],
+                ["Cartoons/Peter Potamus and His Magic Flying Balloon/", "PeterPotamus"],
+                ["Cartoons/Pink Panther/", "PinkPanther"],
+                ["Cartoons/Pixie & Dixie/", "PixieAndDixie"],
+                ["Cartoons/Road Runner/", "RoadRunner"],
+                ["Cartoons/Rocky and Bullwinkle/", "RockyAndBullwinkle"],
+                ["Cartoons/Scooby Doo, Where Are You/", "ScoobyDoo"],
+                ["Cartoons/Secret Squirrel/", "SecretSquirrel"],
+                ["Cartoons/Simpsons/", "Simpsons"],
+                ["Cartoons/Snagglepuss/", "Snagglepuss"],
+                ["Cartoons/Speed Racer/", "SpeedRacer"],
+                ["Cartoons/Tennessee Tuxedo/", "TennesseeTuxedo"],
+                ["Cartoons/The Yogi Bear Show/", "YogiBear"],
+                ["Cartoons/Tom and Jerry/", "TomAndJerry"],
+                ["Cartoons/Top Cat/", "TopCat"],
+                ["Cartoons/Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
+                ["Cartoons/Underdog/", "Underdog"],
+                ["Cartoons/Unsorted/", "UnsortedCartoons"],
+                ["Cartoons/Woody Woodpecker/", "WoodyWoodpecker"],
+                )
+
+log = ''
+
+
+def natural_sort(x):
+    return [int(y) if y.isdigit() else y for y in re.split(r'(\d+)', x)]
+
+
+def validate_directory(directory):
+    global log
+    if not os.path.exists(directory):
+        log.error("Directory {} does not exist".format(os.path.abspath(directory)))
+
+
+def duration(file, precision=3):
+    global log
+    result = subprocess.Popen(' '.join(['ffprobe',
+                                        '-print_format json',
+                                        '-show_format',
+                                        '-hide_banner',
+                                        re.escape(file)]),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              shell=True)
+    output = ''
+    for x in result.stdout.readlines():
+        try:
+            output += x.decode('utf-8')
+        except UnicodeDecodeError:
+            pass
+
+    # output = ''.join(result.stdout.readlines())
+    meta = json.loads(output[output.find('{'): output.rfind('}') + 1])
+    duration = float(meta['format']['duration'])
+    duration = round(duration, precision) * 10 ** precision
+    return int(duration)
+
+
+def new_duration(file):
+    meta = FFProbe(file)
+    for s in meta.streams:
+        if s.isVideo():
+            d = s.durationSeconds()
+            return int(round(d, 3) * 1000)
+    return None
+
+
+def is_video(file):
+    global log
+    video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
+                        '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
+                        '.mpg', '.mpeg', '.vob', '.asf', '.wmv', '.flv')
+    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso')
+
+    # ignore videos whose filename begins with '99'
+    if os.path.basename(file).startswith('99'):
+        return False
+
+    skipdir = os.sep + '99'
+    # also ignore directories that begin with '99'
+    if skipdir in file:
+        return False
+
+    x = os.path.splitext(file)[1].lower() in video_extensions
+
+    if not x:
+        if not os.path.splitext(file)[1].lower() in common_extensions:
+            log.warning("File {} is not an expected file.".format(file))
+    return x
+
+
+def create_list(directory, name):
+    global log
+
+    validate_directory(directory)
+    log.info("Reading directory {}".format(directory))
+    files = [os.path.abspath(os.path.join(dirpath, file))
+             for (dirpath, dirnames, filenames) in os.walk(directory)
+             for file in filenames]
+    videos = list(filter(is_video, files))
+    videos.sort(key=natural_sort)
+    number_of_videos = len(videos)
+    log.info("{} videos found".format(number_of_videos))
+
+    if number_of_videos == 0:
+        log.error("No videos found in {}".format(directory))
+
+    try:
+        flname = os.path.join(os.getenv('HOME'), '.leetv', 'media', name + '.lst')
+        filelist = open(flname, 'w')
+        log.info("Creating media file list {}".format(flname))
+    except IOError:
+        log.error("Unable to create file: {}".format(flname))
+
+    count = 0
+    for i in range(number_of_videos):
+        length = 0
+        try:
+            log.info("Probing video {} of {} : {}".format(i + 1,
+                                                          number_of_videos,
+                                                          videos[i]))
+            video = urllib.parse.quote(videos[i])
+            length = duration(videos[i])
+
+            if length:
+                filelist.write('{} : {}\n'.format(video, length))
+                count += 1
+            else:
+                log.warning("Unable to get duration for {}".format(videos[i]))
+        except KeyError:
+            log.warning("Video {} : {} is invalid".format(i, videos[i]))
+            continue
+
+    filelist.close()
+    log.info("{} videos added to the filelist {}".format(count, name))
+
+
+def main(quiet):
+    global log
+    if quiet:
+        log = Log(level='WARNING')
+    else:
+        log = Log(level='INFO')
+
+    # first, check for new directories not added to the lists above
+    for name in os.listdir(os.path.join(basetv, 'Television')):
+        full = os.path.join('Television', name) + os.sep
+        found = False
+        for i, entry in enumerate(tvlist):
+            if full in entry[0]:
+                found = True
+        if not found:
+            log.warning("Directory {} not found in list!".format(full))
+            try:
+                input("Press enter to continue anyway, ^C to exit\n")
+            except KeyboardInterrupt:
+                sys(exit(1))
+
+    for name in os.listdir(os.path.join(basetv, 'Cartoons')):
+        full = os.path.join('Cartoons', name) + os.sep
+        found = False
+        for i, entry in enumerate(cartoonlist):
+            if full in entry[0]:
+                found = True
+        if not found:
+            log.warning("Directory {} not found in list!".format(full))
+            try:
+                input("Press enter to continue anyway, ^C to exit\n")
+            except KeyboardInterrupt:
+                sys(exit(1))
+
+    try:
+        input("All directories accounted for.  Press enter to create lists:")
+    except KeyboardInterrupt:
+        sys(exit(1))
+
+    # now, create all the media list files
+    numlists = 0
+    for dir, name in tvlist:
+        path = os.path.join(basetv, dir)
+        log.info("Processing {} : {}".format(name, path))
+        create_list(path, name)
+        numlists += 1
+
+    for dir, name in cartoonlist:
+        path = os.path.join(basecartoon, dir)
+        log.info("Processing {} : {}".format(name, path))
+        create_list(path, name)
+        numlists += 1
+
+    for dir, name in movielist:
+        path = os.path.join(basemovie, dir)
+        log.info("Processing {} : {}".format(name, path))
+        create_list(path, name)
+        numlists += 1
+
+    log.info("Finished. {} media lists created.".format(numlists))
+
+    return 0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Create leetv media file list")
+    parser.add_argument("-q", "--quiet", default=False, action="store_true", help="no messages")
+    args = parser.parse_args()
+    quiet = args.quiet
+    sys.exit(main(quiet))

@@ -1,0 +1,176 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-listmedia
+#
+#  A leetv utility program
+#
+#  Create individual media file lists for leetv.
+#  Alternatively, see ltv-listallmedia for a batch
+#  oriented version for large collections.
+#
+#  Last update: 2018-05-28
+#
+#  File format:  videoFilename : DurationInMilliseconds <newline>
+#
+#  File names are pre-parsed for use in various playlist formats
+#
+#  USAGE:    ltv-listmedia [-v] [-d directory] -n name
+#
+import sys
+import os
+import argparse
+import urllib.parse
+import subprocess
+import json
+import re
+
+from leeutils import Log
+
+log = ''
+
+
+def natural_sort(arg):
+    return [int(y) if y.isdigit() else y for y in re.split(r'(\d+)', arg)]
+
+
+def validate_directory(path):
+    global log
+    if not os.path.exists(path):
+        log.error("Directory {} does not exist".format(os.path.abspath(path)))
+
+
+def duration(file, precision=3):
+    global log
+    result = subprocess.Popen(' '.join(['ffprobe',
+                                        '-print_format json',
+                                        '-show_format',
+                                        re.escape(file)]),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              shell=True)
+    output = ''
+    for line in result.stdout.readlines():
+        try:
+            output += line.decode('utf-8')
+        except UnicodeDecodeError:
+            pass
+
+    # output = ''.join(result.stdout.readlines())
+    meta = json.loads(output[output.find('{'): output.rfind('}') + 1])
+    dur = float(meta['format']['duration'])
+    dur = round(dur, precision) * 10 ** precision
+    return int(dur)
+
+
+def is_video(file):
+    global log
+    video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
+                        '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
+                        '.mpg', '.mpeg', '.vob', '.asf', '.wmv', '.flv')
+    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso', '.zip', '.pdf')
+
+    # ignore videos whose filename begins with '99'
+    if os.path.basename(file).startswith('99'):
+        return False
+
+    skipdir = os.sep + '99'
+    # also ignore directories that begin with '99'
+    if skipdir in file:
+        return False
+
+    xten = os.path.splitext(file)[1].lower() in video_extensions
+
+    if not xten:
+        if not os.path.splitext(file)[1].lower() in common_extensions:
+            log.warning("File {} is not an expected file.".format(file))
+
+    return xten
+
+
+def main(directory, name, append, verbose):
+    global log
+    if verbose:
+        log = Log(level='INFO')
+    else:
+        log = Log(level='OFF')
+
+    validate_directory(directory)
+    log.info("Reading directory {}".format(directory))
+    files = [os.path.abspath(os.path.join(dirpath, file))
+             for (dirpath, dirnames, filenames) in os.walk(directory)
+             for file in filenames]
+    videos = list(filter(is_video, files))
+    videos.sort(key=natural_sort)
+    number_of_videos = len(videos)
+    log.info("{} videos found".format(number_of_videos))
+
+    if number_of_videos == 0:
+        log.error("No videos found in {}".format(directory))
+
+    try:
+        flname = os.path.join(os.getenv('HOME'), '.leetv', 'media', name + '.lst')
+        if append:
+            filelist = open(flname, 'a')
+            log.info("Appending media file list {}".format(flname))
+        else:
+            filelist = open(flname, 'w')
+            log.info("Creating media file list {}".format(flname))
+    except IOError:
+        log.error("Unable to create file: {}".format(flname))
+
+    count = 0
+    for i in range(number_of_videos):
+        length = 0
+        try:
+            log.info("Probing video {} of {} : {}".format(i + 1,
+                                                          number_of_videos,
+                                                          videos[i]))
+            video = urllib.parse.quote(videos[i])
+            length = duration(videos[i])
+
+            if length:
+                filelist.write('{} : {}\n'.format(video, length))
+                count += 1
+            else:
+                log.warning("Unable to get duration for {}".format(videos[i]))
+        except KeyError:
+            log.warning("Video {} : {} is invalid".format(i, videos[i]))
+            continue
+
+    filelist.close()
+    log.info("{} videos added to the filelist {}".format(count, name))
+
+    return 0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Create leetv media file list")
+    parser.add_argument("-d", "--directory", default=os.getcwd(), help="directory containing videos")
+    parser.add_argument("-n", "--name", help="name of the filelist")
+    parser.add_argument("-a", "--append", default=False, action="store_true", help="append to list")
+    parser.add_argument("-v", "--verbose", default=False, action="store_true", help="verbose")
+    args = parser.parse_args()
+    directory_arg = args.directory.rstrip(os.sep)
+    name_arg = args.name if args.name else os.path.basename(directory_arg)
+    verbose_arg = args.verbose
+    append_arg = args.append
+    sys.exit(main(directory_arg, name_arg, append_arg, verbose_arg))

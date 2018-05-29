@@ -1,0 +1,623 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+""" LeeTV Television Station """
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  leetv (main application)
+#
+#  While this program can be run from the command line,
+#  it is designed (primarily) to be triggered at midnight
+#  from a cron job.  Additionally, ltv-getnewsweather should
+#  also be run from cron to generate hourly news and weather
+#  udpates.  For example:
+#
+# --------------------------------------------------------
+# DISPLAY=:0.0
+# 0    0    *    *    *    /path/to/startleetv
+# 15   *    *    *    *    /path/to/ltv-getnewsweather -w
+# 45   *    *    *    *    /path/to/ltv-getnewsweather -n
+# --------------------------------------------------------
+#
+# NOTE: under X11/Linux, you must set the DISPLAY variable
+#       in your crontab file to the display you want the
+#       media player to start on.  Under MacOS X, use a
+#       LaunchAgent plist file.  Under Windows, use the
+#       Task Scheduler.
+#
+# Sample startleetv script:
+#
+# --------------------------------------------------------
+#  #!/bin/sh
+#  # kill mpv (or vlc) if it's running
+#  killall mpv
+#  /path/to/leetv
+# --------------------------------------------------------
+#
+#  With no options, leetv defaults to m3u8
+#  playlist format with mpv as the media player
+#
+#
+#  Last update: 2018-05-28
+#
+#
+#  USAGE:
+#   > leetv [-n] [-s] [-v] [-t hhmm] [-p player] [-f format] [-l level] [-h]
+#
+#   -n  Don't generate playlist (use existing)
+#   -s  Enable multicast streaming
+#   -v  Show output to screen as well as log file
+#   -t  hhmm or hh:mm - effective start time 24hr format
+#   -p  player (vlc|mpv|none)
+#   -f  format of playlist (m3u8|xspf|pls)
+#   -l  loglevel (DEBUG|INFO|WARNING|ERROR|OFF)
+#   -h  Help
+#
+#  This is my 'television station' program.
+#
+#  It uses a number of configuration files
+#  under the '~/.leetv/' directory:
+#
+#   ~/.leetv/config/settings.ini
+#       -stores last played episodes/dates for each series
+#        as well as global settings (e.g. bumper file names
+#        and durations)
+#   ~/.leetv/sched/sun.ini thru sat.ini
+#       -daily schedules with 1/2 hour time slots
+#        Each time slot can be programmed as 'linear'
+#        (videos are played in linear sequence) or
+#        'random' (videos are played in random sequence).
+#        There are 48 1/2-hour time slots in each file.
+#        For 1-hour shows, just enter the show name in
+#        the first slot, and 'blank' in the following
+#        slot (it will skip the 2nd slot even if it's
+#        programmed with something other than 'blank').
+#        Likewise, if a super-long video is played, the
+#        program will skip as many slots as necessary
+#        to play it.  If a video is shorter than 15 minutes,
+#        the program will try to fit another episode in the
+#        time slot rather than fill with 15 minutes of
+#        commercials.  I normally run the same schedule
+#        for mon.ini, tue.ini, wed.ini, thu.ini and fri.ini,
+#        with variations for sat.ini and sun.ini.  However,
+#        all seven can be identical or completely different.
+#        UPDATE: in addition to 'linear' and 'random', a slot
+#        can have a numeric sequence indicating a second
+#        (or third, or fourth...) episode of the same series
+#        in the same day.
+#   ~/.leetv/media/*.lst
+#       -The '.lst' files each contain a list of videos
+#        with running times for a specific TV series.
+#        The name of each file is what is entered in the
+#        daily schedule .ini files (minus the .lst extension).
+#        These are generated automatically by my companion
+#        'filelister' program.  This needs to be run any
+#        time the source content changes (i.e. videos are
+#        added, renamed, moved, or deleted).
+#   ~/.leetv/bumper.mp4, fill.mp4, reset.mp4, news.mp5, weather.mp4
+#       -these are the 'bumper' videos created from
+#        still images by makevideos.sh.  The bumper.mp4
+#        video is 5 seconds long and played just before
+#        each time slot - normally on the 1/2 hour.
+#        Afer that, news.mp4 is played at the top of the
+#        hour (15 seconds), or weather.mp4 (also 15 seconds)
+#        at the bottom of the hour.  Cron jobs update the
+#        weather and news videos hourly at xx:15 and xx:45
+#        respectively.  The fill.mp4 video is 1,780 seconds long
+#        (20 seconds short of 1/2 hour) and is played during
+#        unprogrammed (blank) time slots (usually when everyone
+#        in the house is asleep).  These videos can be any desired
+#        length (defined in settings.ini), but the key is that
+#        bumper + news + fill == bumper + weather + fill == 30 min.
+#   ~/.leetv/yyyymmdd.[xspf|m3u8|pls] (e.g. '20180414.xspf')
+#        This is the main output: a VLC or mpv playlist.
+#
+#   This program takes all of the above info and uses it to
+#   generate the playlist for the day, complete with bumpers and
+#   commercial fills, accurate to the millisecond.  It then launches
+#   VLC (or mpv) in fullscreen mode with the playlist.  Leetv should
+#   normally be run automatically at midnight every day (e.g. cron job),
+#   but it can also be run at any time to generate a playlist
+#   that runs from 'now' until midnight, or from any arbitrary starting
+#   point specified on the command line.
+#
+# Standard libraries
+import sys
+import os
+import platform
+import argparse
+import random
+import urllib.parse
+from datetime import date, datetime
+import time
+from configparser import ConfigParser
+
+# Third-party libraries
+import psutil
+
+# Local modules
+from leeutils import Log
+from ltv import Tv
+
+
+# program version
+__version__ = '1.11'
+
+
+def get_settings(log, tv, settings, slot, fn):
+    """ get settings for this slot and pick the next episode (index) """
+    today = date.strftime(date.today(), '%Y%m%d')
+    if settings.has_section(slot['series']):
+        lastdate = settings.get(slot['series'], 'lastdate')
+        index = settings.getint(slot['series'], 'lastplayed')
+        skip = settings.getint(slot['series'], 'skip')
+        if (lastdate != today) or slot['seq'].isnumeric():
+            # pick a new episode
+            if slot['seq'] == 'linear':
+                if not skip:
+                    index += 1
+                else:
+                    index += skip
+                if index >= len(fn):
+                    index = 0
+                    log.info("Series {} rolled over".format(slot['series']))
+            elif slot['seq'].isnumeric():
+                # multiple episodes in one day
+                index += int(slot['seq']) - 1
+                if index >= len(fn):
+                    # end of series, start over
+                    log.info("Series {} rolled over".format(slot['series']))
+                    index -= len(fn)
+            else:  # slot['seq'] is 'random'
+                index = random.randrange(0, len(fn))
+    else:
+        # no saved section, start a new one
+        settings.add_section(slot['series'])
+        if slot['seq'] == 'linear':
+            index = 0
+        elif slot['seq'].isnumeric():
+            # this would be an error in the schedule:
+            # if seq is a number, there should have been
+            # a 'linear' or 'random' before it which would
+            # have created the section in settings.ini
+            log.warning('Series {} with numeric seq {} before linear/random'.format(
+                slot['series'], slot['seq']))
+            index = int(slot['seq']) - 2
+        else:  # slot['seq'] is 'random'
+            index = random.randrange(0, len(fn))
+
+    # special processing for 'MovieNight'
+    # ensures that a movie is never picked
+    # more than once
+    if slot['series'] == tv.movies_name and lastdate != today:
+        # make sure we don't pick a movie that
+        # we've already played
+        movies = ConfigParser()
+        movies_file = os.path.join(tv.directory, 'config', 'movies.ini')
+        movies.read(movies_file)
+
+        moviename = os.path.splitext(
+            os.path.basename(urllib.parse.unquote(fn[index])))[0]
+        if movies.has_section(moviename):
+            # go through whole list until we find an
+            # unplayed movie
+            if slot['seq'] == 'linear' or slot['seq'].isnumeric():
+                tries = len(fn)
+            else:
+                tries = len(fn) * 10 + 1
+            while tries:
+                if slot['seq'] == 'linear':
+                    if not skip:
+                        index += 1
+                    else:
+                        index += skip
+                    if index >= len(fn):
+                        log.info("Movie list {} rolled over".format(
+                            slot['series']))
+                        index = 0
+                elif slot['seq'].isnumeric():
+                    # multiple movies in one day
+                    index += int(slot['seq']) - 1
+                    if index >= len(fn):
+                        # end of movie list, start over
+                        log.info("Movie list {} rolled over".format(
+                            slot['series']))
+                        index -= len(fn)
+                else:  # slot['seq'] is 'random'
+                    index = random.randrange(0, len(fn))
+
+                moviename = os.path.splitext(
+                    os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                if not movies.has_section(moviename):
+                    log.debug("Adding movie: {}".format(moviename))
+                    movies.add_section(moviename)
+                    movies.set(moviename, 'lastdate', today)
+                    break
+                tries -= 1
+            if not tries:
+                log.info("Unable to find unplayed movie!")
+        else:  # movie has never been played
+            log.debug("Adding movie: {}".format(moviename))
+            movies.add_section(moviename)
+            movies.set(moviename, 'lastdate', today)
+
+        # append chosen movie to movies.ini
+        log.debug('Updating movies.ini')
+        with open(movies_file, 'w') as movf:
+            movies.write(movf)
+
+    return index
+
+
+def update_settings(settings, slot, index):
+    """ update settings after adding a video """
+    today = date.strftime(date.today(), '%Y%m%d')
+    if not slot['seq'].isnumeric():
+        settings.set(slot['series'], 'lastplayed', str(index))
+        settings.set(slot['series'], 'lastdate', today)
+        settings.set(slot['series'], 'skip', '0')
+    else:
+        settings.set(slot['series'], 'skip', str(slot['seq']))
+
+
+# main entry point.  START HERE
+def main(args):
+    """ Main entry point """
+
+    # execution timer
+    start_time_s = time.time()
+
+    # for tracking memory usage
+    process = psutil.Process(os.getpid())
+
+    # used for log and playlist file names
+    today = date.strftime(date.today(), '%Y%m%d')
+
+    # create a LOG object
+    log = Log(level=args.loglevel.upper())
+
+    # create a TV object
+    tv = Tv(log)
+
+    # set up log file AFTER the TV object validates the installation directory
+    log.set_output(os.path.join(tv.directory, 'log', today + '.log'), dualoutput=args.verbose)
+
+    log.info(40 * '-')
+    log.info('LeeTV {} Copyright (C) 2018 by Jim Lee'.format(__version__))
+    log.info(40 * '-')
+    log.info('Platform: {} {}'.format(platform.system(), platform.release()))
+    log.info('LeeTV={}'.format(tv.directory))
+
+    # open global settings file
+    settings = ConfigParser()
+    settings_file = os.path.join(tv.directory, 'config', 'settings.ini')
+    settings.read(settings_file)
+
+    # list of already used commercials
+    used_file = os.path.join(tv.directory, 'config', 'used.lst')
+
+    # playlist filename
+    playlist_file = os.path.join(tv.directory, today + '.' + args.format.lower())
+
+    if args.noplaylist:
+        # see if we already created a playlist today
+        if os.path.isfile(playlist_file):
+            # heavy work already done, just restart media player at the correct offset
+            log.info('Using existing playlist: {}'.format(playlist_file))
+            # figure out where to jump into the playlist
+            offset_s = tv.get_offset_into_playlist(datetime.now())
+            # start playing!
+            if args.player.lower() == 'none':
+                log.warning("Player 'none' and --noplaylist selected.  What did you want me to do?")
+            tv.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
+            sys.exit(0)
+        else:
+            log.error('Playlist file {} does not exist!'.format(playlist_file))
+
+    # get schedule for this day of the week
+    sched = ConfigParser()
+    sched.read(os.path.join(tv.directory, 'sched', tv.get_dow(date.today()) + '.ini'))
+
+    # no overtime videos yet
+    overtime_slots = 0
+
+    # determine effective starting time for the playlist
+    # arg format can be '1234' or '12:34' or 'now'
+    bad_timestart = False
+    if not args.timestart or args.timestart.lower() == 'now':
+        offset_s = tv.get_offset_into_playlist(datetime.now())
+    elif ':' in args.timestart and len(args.timestart) == 5:
+        h = int(args.timestart[0:2])
+        m = int(args.timestart[3:5])
+        offset_s = (h * 60 * 60) + (m * 60)
+        if offset_s > 86400:
+            bad_timestart = True
+    elif args.timestart.isnumeric() and len(args.timestart) == 4:
+        h = int(args.timestart[0:2])
+        m = int(args.timestart[2:4])
+        offset_s = (h * 60 * 60) + (m * 60)
+        if offset_s > 86400:
+            bad_timestart = True
+    else:
+        bad_timestart = True
+
+    if bad_timestart:
+        log.error(
+            'Invalid timestart parameter: {} (should be hhmm or hh:mm or now)'.format(args.timestart))
+
+    log.info('Run: {}'.format(datetime.now().strftime("%a %b %d, %Y %I:%M%p")))
+    log.info('Offset: {} ({}s)'.format(tv.running_time_ms_to_timestamp(offset_s * 1000), offset_s))
+
+    log.info('Commercial pool: {}'.format(len(tv.cn)))
+
+    # iterate through all the time slots
+    # there are four major paths:
+    #   1) we're processing a slot that comes before 'now':
+    #      skip the slot
+    #   2) we come midway into a slot:
+    #      see if we can fit a program
+    #      fill rest with commercials
+    #   3) we come into the start of a slot:
+    #      add bumper and weather/news videos
+    #      add program video
+    #      fill rest with commercials
+    #   4) we're filling up the end of an 'overtime' slot:
+    #      fill rest of last slot with commercials
+    for slot in tv.timeslot():
+        # MAIN LOOP
+        #
+        # slot['label'] = '0000' '0030' '0100' '0130'...
+        # slot['mins']  = 0 30 60 90...
+        #
+        log.debug("LOOP START: Slot: {} BaseMins: {} Running: {:.3f}".format(
+            slot['label'], slot['mins'], tv.ms_to_min(tv.running_time_ms)))
+
+        slot_end_ms = tv.min_to_ms(slot['mins'] + 30)
+
+        # if we're not starting at midnight, figure out where
+        # in the schedule 'now' is located and build from there
+        # skip enough slots to reach 'now'
+        if offset_s > (slot['mins'] * 60) and offset_s < ((slot['mins'] + 30) * 60):
+            # 'now' is somewhere in the current time slot
+
+            # skip the bumper and weather/news videos
+            # since we're not at the beginning of the slot
+
+            # first, add the unused portion of this time slot
+            # to running time
+            tv.running_time_ms += (offset_s - (slot['mins'] * 60)) * 1000
+
+            # calculate how much time we have left in the slot (mS)
+            target_ms = slot_end_ms - tv.running_time_ms
+
+            log.debug('OFFSET START: Target: {:.3f} Slot: {} Running: {:.3f}'.format(
+                tv.ms_to_min(target_ms), slot['label'], tv.ms_to_min(tv.running_time_ms)))
+
+            # see if there's enough time left in this slot
+            # to fit the main program video
+            if slot['series'] != 'blank':
+                fn, ft = tv.get_medialist(slot)
+                # get the next episode to play
+                index = get_settings(log, tv, settings, slot, fn)
+
+                # can we fit an episode before the end of the time slot?
+                if int(ft[index]) <= target_ms:
+                    tv.add_video(fn[index], ft[index], series=slot['series'])
+                    target_ms -= int(ft[index])
+                    update_settings(settings, slot, index)
+
+            log.debug(
+                'INITIAL COMMERCIAL FILL: Target: {:.3f}m Slot: {} Mins: {} Running: {:.3f}'.format(
+                    tv.ms_to_min(target_ms),
+                    slot['label'],
+                    slot['mins'],
+                    tv.ms_to_min(tv.running_time_ms)))
+
+            # fill rest of slot with random commercials
+            tv.do_commercial_fill(target_ms)
+            # return to main loop and resume normal programming
+            continue
+        elif offset_s > (slot['mins'] * 60):
+            # we're not up to 'now' yet
+            log.debug('Skipping slot {}'.format(slot['label']))
+            tv.running_time_ms += tv.min_to_ms(30)
+            # return to main loop until we get to 'now' in the schedule
+            continue
+
+        # we're now up to 'now', no more dealing with partial slots
+        # fill the rest of the day normally
+        if not overtime_slots:
+            # if this slot isn't being skipped because a video from
+            # the previous slot ran overtime:
+            #
+            #   1) insert bumper video to kick off the time slot
+            #   2) insert weather or news video depending on time
+            #   3) get show for each 1/2 hour time slot
+            #   4) fill rest of slot with commercials
+            #
+            #   Special proccessing for 'short' videos:
+            #   If a video is less than 15 minutes long,
+            #   try to fill the slot with as many videos
+            #   as will fit.
+            #
+            #   Special processing for 'long' videos:
+            #   If a video is longer than 30 minutes,
+            #   adjust (skip) as many of the following
+            #   slots as necessary and backfill the balance
+            #   of the final slot with commercials.
+            #
+            #   Special processing for 'MovieNight':
+            #   If a 'MovieNight' slot is detected,
+            #   pick a movie and make sure it's not one
+            #   that's been played before.
+            #   The list of played movies is kept in
+            #   '~/.leetv/config/movies.ini'
+            #
+            tv.add_bumper_video()
+            if slot['mins'] % 60:
+                # show weather at the bottom of the hour
+                tv.add_weather_video()
+            else:
+                # show news at the top of the hour
+                tv.add_news_video()
+
+            # Do we have a series programmed for this time slot?
+            if slot['series'] != 'blank':
+                fn, ft = tv.get_medialist(slot)
+                # get next episode to play
+                index = get_settings(log, tv, settings, slot, fn)
+
+                # add the main video to the master list
+                # and save the lastplayed/lastdate info
+                tv.add_video(fn[index], ft[index], series=slot['series'])
+                update_settings(settings, slot, index)
+
+                # if current video > 30 minutes, abort Commercial fill
+                # and figure out how many time slots to skip before
+                # resuming programming
+                if tv.ms_to_min(int(ft[index])) > 30:
+                    # how many slots to skip before resuming
+                    # normal programming
+                    overtime_slots = tv.ms_to_min(int(ft[index])) // 30
+                    log.debug(
+                        "Video greater than 30 minutes.  Skipping {} slot(s)".format(
+                            overtime_slots))
+                    continue
+
+                # if current video is <= 15 minutes, try to fit more
+                # in this time slot (intended mainly for cartoons)
+                elif tv.ms_to_min(int(ft[index])) <= 15:
+                    log.debug("Short video.  Trying to fit more...")
+                    target_ms = slot_end_ms - tv.running_time_ms
+                    while True:
+                        # try another episode
+                        index += 1
+                        if index >= len(fn):
+                            index = 0
+
+                        if int(ft[index]) <= target_ms:
+                            log.debug("Adding video to current slot")
+                            tv.add_video(fn[index], ft[index], series=slot['series'])
+                            target_ms -= int(ft[index])
+                            # update_settings(settings, slot, index)
+                        else:
+                            # no room for another video, go on to next slot
+                            break
+
+            else:
+                # time slot is 'blank', show fill video
+                log.debug('BLANK SLOT: {} (adding fill video)'.format(slot['label']))
+                tv.add_fill_video()
+                continue
+
+            # now, fill rest of slot with random commercials
+            # calculate how much time we have left in the slot (mS)
+            target_ms = slot_end_ms - tv.running_time_ms
+            log.debug('COMMERCIAL FILL: Target: {:.3f}m Slot: {} Mins: {} Running: {:.3f}'.format(
+                tv.ms_to_min(target_ms),
+                slot['label'], slot['mins'],
+                tv.ms_to_min(tv.running_time_ms)))
+
+            # do the commercial fill
+            tv.do_commercial_fill(target_ms)
+        else:
+            # previous slot ran overtime by # of 'overtime_slots'
+            # overtime_slots is > 0, decrement by one slot
+            overtime_slots -= 1
+            log.debug('Decrementing overtime_slots to {}'.format(overtime_slots))
+            # see if we're at the last (skipped) slot
+            if not overtime_slots:
+                # this is the slot where the overtime video ends
+                # calculate how much time we have left in the slot (mS)
+                target_ms = slot_end_ms - tv.running_time_ms
+                log.debug('OVERTIME FILL: Target: {:.3f} Slot: {} Running: {:.3f}'.format(
+                    tv.ms_to_min(target_ms), slot['label'], tv.ms_to_min(tv.running_time_ms)))
+
+                # see if there's enough time left in this slot
+                # to fit the main program video
+                if slot['series'] != 'blank':
+                    fn, ft = tv.get_medialist(slot)
+                    # pick a new episode
+                    index = get_settings(log, tv, settings, slot, fn)
+
+                    # can we fit an episode before the end of the time slot?
+                    if int(ft[index]) <= target_ms:
+                        tv.add_video(fn[index], ft[index], series=slot['series'])
+                        target_ms -= int(ft[index])
+                        update_settings(settings, slot, index)
+
+                # do the commercial fill
+                tv.do_commercial_fill(target_ms)
+
+    # now, update settings.ini with new data
+    log.info('Updating settings.ini')
+    with open(settings_file, 'w') as setf:
+        settings.write(setf)
+
+    log.info('Updating used.lst')
+    with open(used_file, 'w') as usedf:
+        for i in tv.used:
+            usedf.write(i + '\n')
+
+    total_ms = tv.running_time_ms - (offset_s * 1000)
+
+    # get the playlist ready
+    tv.write_playlist(playlist_file, fmt=args.format.lower())
+
+    log.info('Playlist running time: {:.2f} seconds ({:.2f} hrs)'.format(
+        total_ms / 1000, tv.ms_to_hr(total_ms)))
+    log.info('Maximum time slot drift: {:.2f} seconds'.format(tv.drift_ms / 1000))
+    log.info('Commercial pool: {}'.format(len(tv.cn)))
+
+    log.info('Memory used: {:.2f} MB'.format(process.memory_full_info().uss / 1024 / 1024))
+
+    log.info('Total execution time: {:.2f} seconds'.format(time.time() - start_time_s))
+
+    # start playing!
+    tv.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
+
+    log.info(40 * '-')
+
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="LeeTV {}: A television station (C) 2018 by Jim Lee".format(__version__))
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="output messages to screen AND logfile (default: logfile)")
+    parser.add_argument("-n", "--noplaylist", action="store_true",
+                        help="don't generate playlist, use existing (default: generate)")
+    parser.add_argument("-s", "--stream", action="store_true",
+                        help="enable multicast streaming (default: false)")
+    parser.add_argument("-t", "--timestart", default="now",
+                        help="start time for playlist (default: now)")
+    parser.add_argument("-p", "--player", default="MPV",
+                        help="select video player (vlc|mpv|none) (default: mpv)")
+    parser.add_argument("-f", "--format", default="M3U8",
+                        help="select playlist format (m3u8|xspf|pls) (default: m3u8)")
+    parser.add_argument("-l", "--loglevel", default="INFO",
+                        help="loglevel (DEBUG|INFO|WARNING|ERROR|OFF) (default: INFO)")
+
+    cmdargs = parser.parse_args()
+    random.seed()
+    sys.exit(main(cmdargs))

@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-alltimes
+#
+#  A leetv utility program
+#
+#  Generate a list of media list files
+#  with run time statistics (min/max/avg),
+#  sorted by runtime
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import argparse
+import urllib.parse
+
+from leeutils import Log, filewalk
+
+
+def get_filelist(filename, shuffle=False):
+    f = list()
+    t = list()
+
+    if not os.path.isfile(filename):
+        print('{} does not exist!'.format(filename))
+        sys.exit(1)
+
+    with open(filename, 'r') as fp:
+        lst = fp.readlines()
+        if shuffle:
+            random.shuffle(lst)
+        for x in lst:
+            a, b = x.split(':')
+            f.append(a.strip())
+            t.append(b.strip())
+        return (f, t)
+
+
+def num_sort(x):
+    a = x.split(' ')
+    return float(a[0])
+
+
+def main(name):
+
+    # create a LOG object
+    log = Log(level='INFO')
+    master = []
+    directory = os.path.join(os.getenv('HOME'), '.leetv', 'media')
+    for series_file in filewalk(directory):
+        if series_file.endswith('.lst'):
+            fn, ft = get_filelist(series_file)
+            target = []
+            min = 99999999
+            max = 0
+            total = 0
+            for i, name in enumerate(fn):
+                runtime = int(ft[i]) / 1000 / 60
+                total += runtime
+                if runtime > max:
+                    max = runtime
+                if runtime < min:
+                    min = runtime
+                if runtime > 0:
+                    # log.info('{} {}'.format(runtime, urllib.parse.unquote(name)))
+                    target.append('{:2.1f} mins ({:2.1f} hrs) {}'.format(runtime, runtime / 60, urllib.parse.unquote(name)))
+
+            sortedlist = sorted(target, key=num_sort)
+
+            #for x in sortedlist:
+            #    log.info(x)
+
+            avg = total / len(fn)
+            master.append('Series: {:20}\tCount: {}\tMin: {:2.1f}m\tMax: {:2.1f}m\tAvg: {:2.1f}m'.format(
+                os.path.splitext(os.path.basename(series_file))[0], len(fn), min, max, avg))
+            # master.append('{:2.1f} m Avg\tSeries: {:20}\tCount: {}\tMin: {:2.1f} m\tMax: {:2.1f} m'.format(
+            #     avg, os.path.splitext(os.path.basename(series_file))[0], len(fn), min, max))
+
+        else:
+            log.warning("File {} doesn't belong here!".format(series_file))
+
+    master.sort(key=num_sort)
+
+    for i in master:
+        print(i)
+
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="List media files sorted by time")
+    parser.add_argument("-n", "--name", default="Commercials", help="name of the filelist")
+    args = parser.parse_args()
+    name = args.name
+    sys.exit(main(name))

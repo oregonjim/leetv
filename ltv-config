@@ -1,0 +1,157 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-config
+#
+#  A leetv utility program
+#
+#  Graphical configuration/schedule editor for leetv
+#
+#  (alternatively, a simple text editor can be used
+#  on ~/.leetv/sched/*.ini and ~/.leetv/config/settings.ini)
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import argparse
+import urllib.parse
+from datetime import date, datetime
+import time
+from configparser import ConfigParser
+
+from PySide.QtCore import *
+from PySide.QtGui import *
+
+from leeutils import *
+
+
+__version__ = '1.00'
+
+class FileList:
+
+    directory = ''
+    series_list = []
+
+    def __init__(self):
+        self.directory = os.path.join(os.getenv('HOME'), '.leetv', 'media')
+        for series_file in filewalk(self.directory):
+            if series_file.endswith('.lst'):
+                fn, ft = self.get_filelist(series_file)
+                min = 99999999
+                max = 0
+                minname = ''
+                maxname = ''
+                total = 0
+                for i, name in enumerate(fn):
+                    runtime = int(ft[i]) / 1000 / 60
+                    total += runtime
+                    if runtime > max:
+                        max = runtime
+                        maxname = name
+                    if runtime < min:
+                        min = runtime
+                        minname = name
+                s = os.path.basename(series_file)
+                minname = urllib.parse.unquote(os.path.basename(minname))
+                maxname = urllib.parse.unquote(os.path.basename(maxname))
+                self.series_list.append([s.replace('.lst',''), round(total / len(fn), 2), round(min, 2), minname, round(max, 2), maxname])
+        self.series_list.sort(key=self.num_sort)
+
+    def get_filelist(self, filename, shuffle=False):
+        f = list()
+        t = list()
+
+        if not os.path.isfile(filename):
+            print('{} does not exist!'.format(filename))
+            sys.exit(1)
+
+        with open(filename, 'r') as fp:
+            lst = fp.readlines()
+            if shuffle:
+                random.shuffle(lst)
+            for x in lst:
+                a, b = x.split(':')
+                f.append(a.strip())
+                t.append(b.strip())
+            return (f, t)
+
+    def num_sort(self, x):
+        return float(x[2])
+
+
+class MainWindow(QMainWindow):
+    # Constructor function
+    def __init__(self):
+        super(MainWindow,self).__init__()
+        self.initGUI()
+
+    def initGUI(self):
+        self.setWindowTitle("LeeTV Config Editor")
+        self.setGeometry(300, 250, 400, 300)
+        self.setMinimumHeight(100)
+        self.setMinimumWidth(250)
+        self.setMaximumHeight(200)
+        self.setMaximumWidth(800)
+        self.show()
+
+
+def main(args):
+
+    s = FileList()
+    names = []
+    for i in s.series_list:
+        names.append(i[0])
+        print(i)
+    sys.exit(0)
+
+    x = list(range(48))
+
+    for i in x:
+        x[i] = names[i]
+
+    myApp = QApplication(sys.argv)
+
+    mainWindow = MainWindow()
+
+    #appLabel = QLabel()
+    #appLabel.setText("PySide Application")
+    #appLabel.setAlignment(Qt.AlignCenter)
+    #appLabel.setWindowTitle("LeeTV Configuration Editor")
+    #appLabel.setGeometry(300, 300, 250, 175)
+    #appLabel.show()
+
+    myApp.exec_()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="ltv-config {}: A LeeTV configuration editor (C) 2018 by Jim Lee".format(__version__))
+
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="output messages to screen AND logfile (default: logfile)")
+    parser.add_argument("-l", "--loglevel", default="INFO",
+                        help="loglevel (DEBUG|INFO|WARNING|ERROR|OFF) (default: INFO)")
+
+    cmdargs = parser.parse_args()
+    sys.exit(main(cmdargs))

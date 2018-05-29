@@ -1,0 +1,212 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-print
+#
+#  A leetv utility program
+#
+#  Generate a printable schedule of "what's playing"
+#  today, this week, or from now until end-of-day.
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import argparse
+from datetime import date, time, datetime
+from configparser import ConfigParser
+from beautifultable import BeautifulTable
+
+
+# list of 1/2 hour time slots in a day - 24hr time format
+times = ('0000', '0030', '0100', '0130', '0200', '0230',
+         '0300', '0330', '0400', '0430', '0500', '0530',
+         '0600', '0630', '0700', '0730', '0800', '0830',
+         '0900', '0930', '1000', '1030', '1100', '1130',
+         '1200', '1230', '1300', '1330', '1400', '1430',
+         '1500', '1530', '1600', '1630', '1700', '1730',
+         '1800', '1830', '1900', '1930', '2000', '2030',
+         '2100', '2130', '2200', '2230', '2300', '2330')
+
+# same time slots mapped as minutes since midnight
+mins = (0, 30, 60, 90, 120, 150,
+        180, 210, 240, 270, 300, 330,
+        360, 390, 420, 450, 480, 510,
+        540, 570, 600, 630, 660, 690,
+        720, 750, 780, 810, 840, 870,
+        900, 930, 960, 990, 1020, 1050,
+        1080, 1110, 1140, 1170, 1200, 1230,
+        1260, 1290, 1320, 1350, 1380, 1410)
+
+
+def get_offset(now):
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    seconds = (now - midnight).seconds
+    return seconds
+
+
+def main(current, daily, weekly, full, hardcopy):
+
+    # go to ~/.leetv directory
+    directory = os.getenv('HOME') + os.sep + '.leetv'
+    os.chdir(directory)
+
+    # open global settings file
+    settings = ConfigParser()
+    settings_file = 'config' + os.sep + 'settings.ini'
+    settings.read(settings_file)
+
+    # open schedule files
+    mon = ConfigParser()
+    mon_file = 'sched' + os.sep + 'mon.ini'
+    mon.read(mon_file)
+
+    # open schedule files
+    tue = ConfigParser()
+    tue_file = 'sched' + os.sep + 'tue.ini'
+    tue.read(tue_file)
+
+    # open schedule files
+    wed = ConfigParser()
+    wed_file = 'sched' + os.sep + 'wed.ini'
+    wed.read(wed_file)
+
+    # open schedule files
+    thu = ConfigParser()
+    thu_file = 'sched' + os.sep + 'thu.ini'
+    thu.read(thu_file)
+
+    # open schedule files
+    fri = ConfigParser()
+    fri_file = 'sched' + os.sep + 'fri.ini'
+    fri.read(fri_file)
+
+    # open schedule files
+    sat = ConfigParser()
+    sat_file = 'sched' + os.sep + 'sat.ini'
+    sat.read(sat_file)
+
+    # open schedule files
+    sun = ConfigParser()
+    sun_file = 'sched' + os.sep + 'sun.ini'
+    sun.read(sun_file)
+
+    table = BeautifulTable(max_width=128)
+    table.set_style(BeautifulTable.STYLE_MARKDOWN)
+    # table.width_exceed_policy = BeautifulTable.WEP_ELLIPSIS
+    table.width_exceed_policy = BeautifulTable.WEP_STRIP
+
+    if weekly:
+        days = (mon, tue, wed, thu, fri, sat, sun)
+        table.column_headers = ["Time", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    elif daily or current:
+        # print just today
+        # from midnight (daily)
+        # or from NOW (current)
+        today = date.today()
+        d = (mon, tue, wed, thu, fri, sat, sun)
+        idx = date(today.year, today.month, today.day).weekday()
+        days = (d[idx],)
+        table.column_headers = ["Time", "Today"]
+    else:
+        # no arguments
+        # asssume mon-fri are the same schedule
+        # print mon-fri as one column plus sat and sun
+        days = (mon, sat, sun)
+        table.column_headers = ["Time", "Mon-Fri", "Sat", "Sun"]
+
+    offset = get_offset(datetime.now())
+
+    for j, slot in enumerate(times):
+
+        if not full:
+            # no options given
+            # skip everything before 9am
+            # so it all fits on one page
+            if j < 18:
+                continue
+
+        if current:
+            # skip all slots before NOW
+            if offset >= (mins[j] * 60):
+                if offset >= ((mins[j] + 30) * 60):
+                    continue
+
+        row = []
+
+        # convert 24hr to am/pm
+        if j > 23:
+            if j > 25:
+                hr = times[j - 24][0:2]
+            else:
+                hr = slot[0:2]
+            mn = slot[2:] + 'p'
+        else:
+            hr = slot[0:2]
+            mn = slot[2:] + 'a'
+
+        start = hr + ':' + mn
+        row.append(start)
+
+        for i, day in enumerate(days):
+            name = day.get(slot, 'series')
+            if name == 'blank':
+                # name = "                    "
+                name = " "
+            # row.append(name.ljust(18)[0:17])
+            row.append(name)
+
+        # if all row slots are blank, no need to print
+        # valid_row = False
+        # for k, test in enumerate(row):
+        #     if k:
+        #         if test.strip().isalnum():
+        #             valid_row = True
+
+        # if valid_row:
+        #     table.append_row(row)
+        table.append_row(row)
+
+    if hardcopy:
+        lpr = subprocess.Popen("/usr/bin/lpr", stdin=subprocess.PIPE)
+        lpr.stdin.write(table.get_string().encode())
+        lpr.wait()
+    else:
+        print(table)
+
+    return 0
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Print LeeTV Schedule")
+    parser.add_argument("-n", "--now", action="store_true", help="show what's on from now until end of day")
+    parser.add_argument("-t", "--today", action="store_true", help="show today's schedule")
+    parser.add_argument("-w", "--week", action="store_true", help="show weekly schedule")
+    parser.add_argument("-f", "--full", action="store_true", help="show 24hr schedule, not just 9am-midnight")
+    parser.add_argument("-p", "--print", action="store_true", help="send output to printer")
+    args = parser.parse_args()
+    current = args.now
+    daily = args.today
+    weekly = args.week
+    full = args.full
+    hardcopy = args.print
+    sys.exit(main(current, daily, weekly, full, hardcopy))

@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  makevideos
+#
+#  A leetv utility program
+#
+#  Create basic bumper/fill videos from still images for leetv
+#
+#  NOTE:  For the fill video, I use an audio file (fill.mp3) which
+#         is a composite of a number of classic TV theme songs from
+#         a CD I purchased years ago.  Obviously, this file is not
+#         legally distributable, so you must come up with your own
+#         soundtrack file(s) to create the bumper/fill videos (or
+#         use no sound at all).
+#
+#  Last update: 2018-05-28
+#
+# make the raw 5-second bumper video (with audio) - to be post-processed by ltv-createbumper
+ffmpeg -loop 1 -i bumper.png -i bumper.m4a -c:v libx264 -t 5 -pix_fmt yuv420p bumper-raw.mp4
+# make the 1/2 hour fill video (minus 20 seconds to make room for news/weather) (with audio)
+ffmpeg -loop 1 -i fill.png -i fill.mp3 -c:v libx264 -t 1780 -pix_fmt yuv420p fill.mp4

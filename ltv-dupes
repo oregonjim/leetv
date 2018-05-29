@@ -1,0 +1,91 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-dupes
+#
+#  A leetv utility program
+#
+#  Check for duplicate videos by filename
+#  in the media list files
+#
+#  Last update: 2018-05-28
+#
+import sys
+import os
+import math
+import collections
+import urllib.parse
+
+
+def get_filelist(filename, shuffle=False):
+    f = list()
+    t = list()
+
+    if not os.path.isfile(filename):
+        print('{} does not exist!'.format(filename))
+        sys.exit(1)
+
+    with open(filename, 'r') as fp:
+        lst = fp.readlines()
+        if shuffle:
+            random.shuffle(lst)
+        for x in lst:
+            a, b = x.split(' : ')
+            f.append(a.strip())
+            t.append(b.strip())
+        return (f, t)
+
+
+def main():
+    dir = os.path.join(os.getenv('HOME'), '.leetv', 'media')
+    founddupes = False
+
+    for filename in os.listdir(dir):
+        norm = []
+        if filename.endswith('.lst'):
+            mediafile = os.path.join(dir, filename)
+            fn, ft = get_filelist(mediafile, shuffle=False)
+
+            # create a list of filenames to compare
+            for f in fn:
+                norm.append(os.path.splitext(os.path.basename(urllib.parse.unquote(f)))[0])
+
+            dupes = [item for item, count in collections.Counter(norm).items() if count > 1]
+
+            if len(dupes):
+                founddupes = True
+                print(79 * '-')
+                print(mediafile)
+                print('DUPLICATES: {}\n'.format(len(dupes)))
+                for i in dupes:
+                    print(i + '\n')
+                    for x in fn:
+                        if i in os.path.basename(urllib.parse.unquote(x)):
+                            print(urllib.parse.unquote(x))
+                    print()
+                print(79 * '-')
+
+    if not founddupes:
+        print('No duplicates found.')
+
+if __name__ == '__main__':
+    sys.exit(main())
