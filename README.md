@@ -1,5 +1,5 @@
 # leetv
-A personal television station designed for 24/7 unattended operation.
+A personal television station :tv: designed for 24/7 unattended operation.
 
 Works with any operating system that supports Python 3.x and VLC or mpv.
 
@@ -185,7 +185,7 @@ examples:
 
   [1800]        # (blank slot)
   series = blank
-  seq = linear  @ (can be anything)
+  seq = linear  # (can be anything)
 ```
   (Of course, a full daily schedule will have 48 of these 1/2 hour slots.  They were
   created automatically the first time you ran leetv.  While you can leave slots
@@ -227,7 +227,7 @@ see the comments in the file itself for details).
   This ensures that 'blank' (unprogrammed) slots are filled exactly and don't
 waste a bunch of commercials to fill unused time.  You can change the times
 if you like, as long as the totals add up correctly.  The filenames and
-durations for all these 'canned' videos are store at the top of settings.ini.
+durations for all these 'canned' videos are stored at the top of settings.ini.
 
   Two other 'canned' videos, news.mp4 and weather.mp4, can be created dynamically
 every hour by the utility 'ltv-getnewsweather'.  Note that you will have to edit the
