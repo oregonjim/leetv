@@ -105,7 +105,7 @@ def main(weather, news, verbose):
             today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
             base = Image.open('weatherbase.jpg').convert('RGBA')
             txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
-            fnt = ImageFont.truetype('Glowworm-Regular.ttf', 80)
+            fnt = ImageFont.truetype('VeraBd.ttf', 80)
             fnt2 = ImageFont.truetype('VeraBd.ttf', 30)
             d = ImageDraw.Draw(txt)
             d.text((int(base.size[0] * .05), 60), "LeeTV Weather", font=fnt, align='center', fill=(64, 0, 64, 220))
@@ -200,7 +200,7 @@ def main(weather, news, verbose):
                 today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
                 base = Image.open('newsbase.jpg').convert('RGBA')
                 txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
-                fnt = ImageFont.truetype('Glowworm-Regular.ttf', 80)
+                fnt = ImageFont.truetype('VeraBd.ttf', 80)
                 fnt2 = ImageFont.truetype('VeraBd.ttf', 40)
                 d = ImageDraw.Draw(txt)
 
