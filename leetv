@@ -295,7 +295,7 @@ def main(args):
     log = Log(level=args.loglevel.upper())
 
     # create a TV object
-    tv = Tv(log)
+    tv = Tv(log, args.exclude)
 
     # set up log file AFTER the TV object validates the installation directory
     log.set_output(os.path.join(tv.directory, 'log', today + '.log'), dualoutput=args.verbose)
@@ -471,13 +471,14 @@ def main(args):
             #   The list of played movies is kept in
             #   '~/.leetv/config/movies.ini'
             #
-            tv.add_bumper_video()
-            if slot['mins'] % 60:
-                # show weather at the bottom of the hour
-                tv.add_weather_video()
-            else:
-                # show news at the top of the hour
-                tv.add_news_video()
+            if not args.exclude:
+                tv.add_bumper_video()
+                if slot['mins'] % 60:
+                    # show weather at the bottom of the hour
+                    tv.add_weather_video()
+                else:
+                    # show news at the top of the hour
+                    tv.add_news_video()
 
             # Do we have a series programmed for this time slot?
             if slot['series'] != 'blank':
@@ -525,8 +526,9 @@ def main(args):
             else:
                 # time slot is 'blank', show fill video
                 log.debug('BLANK SLOT: {} (adding fill video)'.format(slot['label']))
-                tv.add_fill_video()
-                continue
+                if not args.exclude:
+                    tv.add_fill_video()
+                    continue
 
             # now, fill rest of slot with random commercials
             # calculate how much time we have left in the slot (mS)
@@ -605,6 +607,8 @@ if __name__ == '__main__':
 
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="output messages to screen AND logfile (default: logfile)")
+    parser.add_argument("-x", "--exclude", action="store_true",
+                        help="exclude bumper/news/weather/fill videos (default: include)")
     parser.add_argument("-n", "--noplaylist", action="store_true",
                         help="don't generate playlist, use existing (default: generate)")
     parser.add_argument("-s", "--stream", action="store_true",
