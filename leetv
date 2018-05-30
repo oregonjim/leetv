@@ -60,84 +60,18 @@
 #
 #
 #  USAGE:
-#   > leetv [-n] [-s] [-v] [-t hhmm] [-p player] [-f format] [-l level] [-h]
+#   > leetv [-n] [-s] [-v] [-x] [-t hhmm] [-p player] [-f format] [-l level] [-h]
 #
 #   -n  Don't generate playlist (use existing)
 #   -s  Enable multicast streaming
 #   -v  Show output to screen as well as log file
+#   -x  Don't insert 'canned' videos (bumper, fill, etc.)
 #   -t  hhmm or hh:mm - effective start time 24hr format
 #   -p  player (vlc|mpv|none)
 #   -f  format of playlist (m3u8|xspf|pls)
 #   -l  loglevel (DEBUG|INFO|WARNING|ERROR|OFF)
 #   -h  Help
 #
-#  This is my 'television station' program.
-#
-#  It uses a number of configuration files
-#  under the '~/.leetv/' directory:
-#
-#   ~/.leetv/config/settings.ini
-#       -stores last played episodes/dates for each series
-#        as well as global settings (e.g. bumper file names
-#        and durations)
-#   ~/.leetv/sched/sun.ini thru sat.ini
-#       -daily schedules with 1/2 hour time slots
-#        Each time slot can be programmed as 'linear'
-#        (videos are played in linear sequence) or
-#        'random' (videos are played in random sequence).
-#        There are 48 1/2-hour time slots in each file.
-#        For 1-hour shows, just enter the show name in
-#        the first slot, and 'blank' in the following
-#        slot (it will skip the 2nd slot even if it's
-#        programmed with something other than 'blank').
-#        Likewise, if a super-long video is played, the
-#        program will skip as many slots as necessary
-#        to play it.  If a video is shorter than 15 minutes,
-#        the program will try to fit another episode in the
-#        time slot rather than fill with 15 minutes of
-#        commercials.  I normally run the same schedule
-#        for mon.ini, tue.ini, wed.ini, thu.ini and fri.ini,
-#        with variations for sat.ini and sun.ini.  However,
-#        all seven can be identical or completely different.
-#        UPDATE: in addition to 'linear' and 'random', a slot
-#        can have a numeric sequence indicating a second
-#        (or third, or fourth...) episode of the same series
-#        in the same day.
-#   ~/.leetv/media/*.lst
-#       -The '.lst' files each contain a list of videos
-#        with running times for a specific TV series.
-#        The name of each file is what is entered in the
-#        daily schedule .ini files (minus the .lst extension).
-#        These are generated automatically by my companion
-#        'filelister' program.  This needs to be run any
-#        time the source content changes (i.e. videos are
-#        added, renamed, moved, or deleted).
-#   ~/.leetv/bumper.mp4, fill.mp4, reset.mp4, news.mp5, weather.mp4
-#       -these are the 'bumper' videos created from
-#        still images by makevideos.sh.  The bumper.mp4
-#        video is 5 seconds long and played just before
-#        each time slot - normally on the 1/2 hour.
-#        Afer that, news.mp4 is played at the top of the
-#        hour (15 seconds), or weather.mp4 (also 15 seconds)
-#        at the bottom of the hour.  Cron jobs update the
-#        weather and news videos hourly at xx:15 and xx:45
-#        respectively.  The fill.mp4 video is 1,780 seconds long
-#        (20 seconds short of 1/2 hour) and is played during
-#        unprogrammed (blank) time slots (usually when everyone
-#        in the house is asleep).  These videos can be any desired
-#        length (defined in settings.ini), but the key is that
-#        bumper + news + fill == bumper + weather + fill == 30 min.
-#   ~/.leetv/yyyymmdd.[xspf|m3u8|pls] (e.g. '20180414.xspf')
-#        This is the main output: a VLC or mpv playlist.
-#
-#   This program takes all of the above info and uses it to
-#   generate the playlist for the day, complete with bumpers and
-#   commercial fills, accurate to the millisecond.  It then launches
-#   VLC (or mpv) in fullscreen mode with the playlist.  Leetv should
-#   normally be run automatically at midnight every day (e.g. cron job),
-#   but it can also be run at any time to generate a playlist
-#   that runs from 'now' until midnight, or from any arbitrary starting
-#   point specified on the command line.
 #
 # Standard libraries
 import sys
@@ -151,7 +85,11 @@ import time
 from configparser import ConfigParser
 
 # Third-party libraries
-import psutil
+try:
+    import psutil
+    psutil_installed = True
+except ModuleNotFoundError:
+    psutil_installed = False
 
 # Local modules
 from leeutils import Log
@@ -159,7 +97,7 @@ from ltv import Tv
 
 
 # program version
-__version__ = '1.11'
+__version__ = '1.12'
 
 
 def get_settings(log, tv, settings, slot, fn):
@@ -286,7 +224,8 @@ def main(args):
     start_time_s = time.time()
 
     # for tracking memory usage
-    process = psutil.Process(os.getpid())
+    if psutil_installed:
+        process = psutil.Process(os.getpid())
 
     # used for log and playlist file names
     today = date.strftime(date.today(), '%Y%m%d')
@@ -589,7 +528,8 @@ def main(args):
     log.info('Maximum time slot drift: {:.2f} seconds'.format(tv.drift_ms / 1000))
     log.info('Commercial pool: {}'.format(len(tv.cn)))
 
-    log.info('Memory used: {:.2f} MB'.format(process.memory_full_info().uss / 1024 / 1024))
+    if psutil_installed:
+        log.info('Memory used: {:.2f} MB'.format(process.memory_full_info().uss / 1024 / 1024))
 
     log.info('Total execution time: {:.2f} seconds'.format(time.time() - start_time_s))
 

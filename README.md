@@ -3,6 +3,10 @@
 - - -
 
 Works with any operating system that supports Python 3.x and VLC or mpv.
+
+  LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
+under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
+Windows 'works', it's not really suitable for use with anything labeled '24/7'.
 - - -
 
 Two usage scenarios are possible:
@@ -23,18 +27,84 @@ is scheduled for 'now'.  You can optionally specify a start time and leetv will
 pretend that it is running at that time in the schedule (in case you missed
 your favorite show).
 - - -
+## REQUIREMENTS
 
-NOTE:  While this is a fully working program (I've been using it 24/7 for several
-months now), I have not finished the documentation nor have I added
-the kind of exception handling necessary for a 'general public use' type of
-application.  Also missing is an automated 'setup.py' installer.  These elements
-will be added as time allows.  If you can edit a few simple text files and
-are comfortable with the command line, you can get it up and running.
+### Hardware
 
-  LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
-under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
-Windows 'works', it's not really suitable for use with anything labeled '24/7'.
+Any computer and OS capable of running VLC (or mpv) smoothly.
+
+HDMI video/audio out is optimum.
+
+Internet connectivity only needed if weather/news updates are enabled.
+
+OS: Linux, MacOS, Windows
+
+Tested:
+```
+    Linux (various PCs, Fedora Linux)
+    MacOS (2009 Mac Mini, MacOS Snow Leopard 10.6)
+    MacOS (Macbook Pro, Core2Duo, MacOS El Capitan 10.11)
+    Windows (Dell Core2Duo, Windows 7)
+    Windows (MSI Stealth Pro i7, Windows 10)
+    Raspbian (Raspberry Pi 3, VLC built w/HW acceleration)
+```
 - - -
+### Software
+
+Note:  package names and install commands are for Fedora/Redhat Linux.
+Other distributions (e.g. Debian, Ubuntu) may have slightly
+different package names.  Substitute ```apt-get``` for ```dnf```.
+You typically need to prefix all commands with ```sudo```.
+
+#### Manditory:
+
+Python 3.x (likely already present)
+
+mpv or VLC:
+```dnf install mpv```
+or
+```dnf install vlc```
+
+ffprobe (part of the ffmpeg package):
+```dnf install ffmpeg```
+
+#### Optional:
+
+If you want to see memory usage: ```dnf install python3-psutil```
+
+If you want to normalize audio on a bunch of videos (e.g. commercials): ```pip3 install ffmpeg-normalize```
+
+Fonts used by various utilities: ```dnf install bitstream-vera*```
+
+##### For ltv-createbumper:
+
+Animated text-on-video: ```dnf install python3-numpy```
+
+Compositing videos: ```pip3 install moviepy```
+
+
+##### For ltv-print:
+
+To print out your schedule like a TV guide: ```pip3 install beautifultable```
+
+##### For ltv-getnewsweather:
+
+Note: Some or all of these may not be needed, depending on how you want
+to retrieve your news and weather content.
+```
+    dnf install python3-requests       (for grabbing an image from the web)
+    dnf install python3-selenium       (for grabbing news)
+    dnf install chromedriver           (for screenshot of web pages)
+    dnf install ImageMagick            (to resize images for ffmpeg)
+    pip3 install pyvirtualdisplay      (for grabbing web screenshots without disturbing local display)
+    pip3 install pyscreenshot          (required by pyvirtualdisplay)
+    dnf install xorg-x11-server-Xvfb   (virtual X server to host virtual display)
+    dnf install python3-beautifulsoup4 (for parsing news feed)
+```
+
+- - -
+
+## Overview
 
   The basic idea is to take a set of 'schedule' files consisting of 1/2 hour
 'time slots', one for each day of the week, and a set of 'media list' files,
@@ -80,20 +150,20 @@ and hard drive access delays can cause a bit of drift.  I have noticed
 up to a minute or two of total drift over a 24 hour period,
 
 
-##Quickstart :
+## Quickstart :
 
 
   Clone this repository.  Optionally add it to your $PATH.
 - - -
 
-  The first thing to do is look at the file 'prerequisites.txt'.
-It lists all of the necessary (and optional) components required
-to run leetv.  There is nothing esoteric in there - most, if not all,
-are included in the repositories of most Linux distributions.  Same
-goes for MacOS using macports or homebrew, or Windows using Cygwin.
+  Look at the requirements listed above.  At a minimum, you need
+  Python 3, ffprobe, and either mpv (default) or VLC.  Everything
+  else is optional and used mostly for customization.  The two
+  essential programs are ```leetv``` (the main program) and
+  ```ltv-listmedia``` (used to generate your media lists).
 - - -
 
-  The next thing to do is to run 'leetv' once from the command line.
+  The next thing to do is run ```leetv``` once from the command line.
 You will get an error message, but this will create the configuration
 directory tree inside your 'HOME' directory and MOST of the necessary
 files within it.  Here is a picture of what you should have after completing
@@ -137,14 +207,14 @@ this quickstart:
 ```
 - - -
 
-  Next, create all your media list files using ltv-listmedia.  All of
+  Next, create all your media list files using ```ltv-listmedia```.  All of
 the utilities support a '--help' flag to show basic usage.  An example:
 
-$ ltv-listmedia -v -d /mnt/tv/myshow -n MyShow
+```$ ltv-listmedia -v -d /mnt/tv/myshow -n MyShow```
 
-This will create the media list file '~/.leetv/media/MyShow.lst' containing the
-filenames and durations of all video files under the directory '/mnt/tv/myshow'.
-You can then specify the name 'MyShow' in the schedule(s) to refer to this series.
+This will create the media list file ```~/.leetv/media/MyShow.lst``` containing the
+filenames and durations of all video files under the directory ```/mnt/tv/myshow```.
+You can then specify the name ```MyShow``` in the schedule(s) to refer to this series.
 Note that the list is sorted alphanumerically, so if you want to play all the episodes
 in a series in order, they must be named in that order.  It helps to prefix file
 names with, e.g. 3x1 or S03E01 for season 3, episode 1.  Note also that the list is
@@ -152,17 +222,17 @@ created recursively, so a subdirectory named 'Season 1' will come before another
 subdirectory named 'Season 2'.  This lends itself naturally to the way most people
 organize their media files, but it helps to be aware of it.
 
-Note that you must create one media list file named 'Commercials'.  While you will
+Note that you must create one media list file named ```Commercials```.  While you will
 never specify this file explicitly in the schedule, leetv will draw upon this list
 to fill empty time between scheduled programs.
 - - -
 
-  Next, edit the .ini files in ~/.leetv/sched/ to reflect your desired schedule.  I
+  Next, edit the .ini files in ```~/.leetv/sched/``` to reflect your desired schedule.  I
 am working on a graphical configuration editor, but it's not finished yet.  Besides,
 the schedule format is simple and easily edited with any standard text editor.
-Each time slot is named [xxxx], where 'xxxx' is the start time of that slot in 24 hour
-(military) format.  So slot [0000] is midnight, [2000] is 8pm, etc.  Inside each slot
-are two fields: series and seq.  Series is the name of one of your media lists created
+Each time slot is named ```[xxxx]```, where 'xxxx' is the start time of that slot in 24 hour
+(military) format.  So slot ```[0000]``` is midnight, ```[2000]``` is 8pm, etc.  Inside each slot
+are two fields: ```series``` and ```seq```.  Series is the name of one of your media lists created
 above (e.g. 'MyShow', without the .lst extension).  You can leave slots blank if no
 programming is desired at that time (the 'fill' video will be shown).  The 'seq' field
 can be set to 'linear', 'random', or a numeric sequence.  Linear means that your shows
@@ -200,12 +270,12 @@ examples:
   created automatically the first time you ran leetv.  While you can leave slots
   blank, you should not delete them.  Each schedule file must have all 48 slots present.)
 
-  A special case is the series named 'MovieNight' (by default - this can be changed
-in settings.ini).  If you specify this name for the series, leetv will keep track of all
-the videos played (in ~/.leetv/config/movies.ini) and never play the same movie twice.
+  A special case is the series named ```MovieNight``` (by default - this can be changed
+in ```settings.ini```).  If you specify this name for the series, leetv will keep track of all
+the videos played (in ```~/.leetv/config/movies.ini```) and never play the same movie twice.
 I use this to play a random movie from my collection a couple of times a week - and I
-don't want to see the same movie again unless I delete it from movies.ini (or delete
-the movies.ini file altogether).  Nothing says that the MovieNight list has to contain
+don't want to see the same movie again unless I delete it from ```movies.ini``` (or delete
+the movies.ini file altogether).  Nothing says that the ```MovieNight``` list has to contain
 movies - you can use it for any collection of videos, including a normal TV series.
 The only difference is that with a 'regular' series, if random order is chosen, there
 is the possibility of choosing an episode that has been played in the past.  I rarely
@@ -213,17 +283,17 @@ use 'normal' random mode except perhaps for cartoons and collections of unrelate
 - - -
 
   OK, there is only one more task to do before you can start enjoying your TV station!
-It's time to create the 'static' videos: bumper.mp4, reset.mp4, and fill.mp4.  Default
+It's time to create the 'static' videos: ```bumper.mp4```, ```reset.mp4```, and ```fill.mp4```.  Default
 videos are provided in the distribution to get you started, but this is an area intended for
 customization.  You can
 get as fancy or creative as you want here, or you can be done with it in a minute or two.
 The basic idea is to pick a still image and optionally a soundrack, and run them through
-the 'makevideos' shell script.  This will call ffmpeg to create the videos.  Optionally,
-you can postprocess with the 'ltv-createbumper' utility to create animated text effects
+the ```makevideos``` shell script.  This will call ffmpeg to create the videos.  Optionally,
+you can postprocess with the ```ltv-createbumper``` utility to create animated text effects
 if you desire to.  If you don't care about being notified whenever the pool of commercials
-is reset, you can make the bumper.mp4 and reset.mp4 videos the same.  There are two more
-videos that are used in this process: weather.mp4 and news.mp4.  These are created
-automatically on the hour by 'ltv-getnewsweather' (if you have added it as a cron job -
+is reset, you can make the ```bumper.mp4``` and ```reset.mp4``` videos the same.  There are two more
+videos that are used in this process: ```weather.mp4``` and ```news.mp4```.  These are created
+automatically on the hour by ```ltv-getnewsweather``` (if you have added it as a cron job -
 see the comments in the file itself for details).
 
   There is one rule to remember when creating all of these videos:
@@ -241,19 +311,19 @@ waste a bunch of commercials to fill unused time.  You can change the individual
 if you like, as long as the totals add up correctly.  For example, if you want your news
 and weather videos to be 30 seconds longer, then make the fill video 30 seconds shorter.
 The filenames and
-durations for all these 'canned' videos are stored at the top of settings.ini.  If
-you change from the defaults, be sure to update settings.ini.
+durations for all these 'canned' videos are stored at the top of ```settings.ini```.  If
+you change from the defaults, be sure to update ```settings.ini```.
 
   The other 'canned' videos, news.mp4 and weather.mp4, can be created dynamically
-every hour by the utility 'ltv-getnewsweather'.  There are two samples provided
-(sample-news.mp4 and sample-weather.mp4) to show you what ltv-getnewsweather can do.
+every hour by the utility ```ltv-getnewsweather```.  There are two samples provided
+(```sample-news.mp4``` and ```sample-weather.mp4```) to show you what ltv-getnewsweather can do.
 Note that you will have to edit the
 source of this program somewhat to point it to the right sources for your
 preferred news and weather.  See the file itself for details.  There is a 'hard'
 way and an 'easy' way documented...
 
   Now, if you don't want to bother with this canned video business, you
-can easily disable it all by running leetv with the --exclude option.  This
+can easily disable it all by running leetv with the ```--exclude``` option.  This
 will totally ignore these videos and leave you with only your scheduled videos
 and commercials.
 The downside is that you'll be playing lots of commercials
@@ -262,15 +332,15 @@ TV station won't look as 'professional' - but that may not matter to you.  Alter
 you can just use the provided default videos until you decide to customize.
 - - -
 
-  OK, it's time to test your setup.  run 'leetv -v' from the command line and see
+  OK, it's time to test your setup.  run ```leetv -v``` from the command line and see
 what happens.  If all goes well, you'll see a bunch of info messages as
 the playlist is created, followed by the launch of mpv to start playing.
-A log file will also be found in the log directory.  You can add '-l debug'
+A log file will also be found in the log directory.  You can add ```-l debug```
 for more verbose diagnostics.
 
-  If all is working, you can add leetv as a cron job to start every day
-at midnight, and ltv-getnewsweather to run twice an hour (once to get the
-news and once to get the weather).  See the comments at the top of leetv
+  If all is working, you can add ```leetv``` as a cron job to start every day
+at midnight, and ```ltv-getnewsweather``` to run twice an hour (once to get the
+news and once to get the weather).  See the comments at the top of ```leetv```
 for more details.  Enjoy your TV station!  In the meantime, I'll keep
 working on the documentation and the graphical configuration editor...
 
