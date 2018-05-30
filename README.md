@@ -1,5 +1,5 @@
 # leetv
-##A personal television station :tv: designed for 24/7 unattended operation.
+## A personal television station :tv: designed for 24/7 unattended operation.
 - - -
 
 Works with any operating system that supports Python 3.x and VLC or mpv.
