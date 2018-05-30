@@ -1,8 +1,10 @@
 # leetv
-A personal television station :tv: designed for 24/7 unattended operation.
----
+##A personal television station :tv: designed for 24/7 unattended operation.
+- - -
+
 Works with any operating system that supports Python 3.x and VLC or mpv.
----
+- - -
+
 Two usage scenarios are possible:
 
 1. Automated - A dedicated computer, connected to a TV, is set up to run leetv once
@@ -20,7 +22,7 @@ as though you have just 'turned on' the TV and will start playing whatever
 is scheduled for 'now'.  You can optionally specify a start time and leetv will
 pretend that it is running at that time in the schedule (in case you missed
 your favorite show).
----
+- - -
 
 NOTE:  While this is a fully working program (I've been using it 24/7 for several
 months now), I have not finished the documentation nor have I added
@@ -32,7 +34,7 @@ are comfortable with the command line, you can get it up and running.
   LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
 under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
 Windows 'works', it's not really suitable for use with anything labeled '24/7'.
----
+- - -
 
   The basic idea is to take a set of 'schedule' files consisting of 1/2 hour
 'time slots', one for each day of the week, and a set of 'media list' files,
@@ -68,7 +70,7 @@ only 10 minutes long (e.g. a cartoon), rather than fill the time slot with
 20 minutes of commercials, the program will try to fit more program
 videos (as many as will fit) from that series into the time slot before
 resorting to commercials.
----
+- - -
 
   A number of utility programs are included to create the required
 media list files, bumper videos, news & weather videos, and to analyze
@@ -78,18 +80,18 @@ and hard drive access delays can cause a bit of drift.  I have noticed
 up to a minute or two of total drift over a 24 hour period,
 
 
-Quickstart :
-------------
+##Quickstart :
+
 
   Clone this repository.  Optionally add it to your $PATH.
----
+- - -
 
   The first thing to do is look at the file 'prerequisites.txt'.
 It lists all of the necessary (and optional) components required
 to run leetv.  There is nothing esoteric in there - most, if not all,
 are included in the repositories of most Linux distributions.  Same
 goes for MacOS using macports or homebrew, or Windows using Cygwin.
----
+- - -
 
   The next thing to do is to run 'leetv' once from the command line.
 You will get an error message, but this will create the configuration
@@ -133,7 +135,7 @@ this quickstart:
     sat.ini
     sun.ini
 ```
----
+- - -
 
   Next, create all your media list files using ltv-listmedia.  All of
 the utilities support a '--help' flag to show basic usage.  An example:
@@ -153,7 +155,7 @@ organize their media files, but it helps to be aware of it.
 Note that you must create one media list file named 'Commercials'.  While you will
 never specify this file explicitly in the schedule, leetv will draw upon this list
 to fill empty time between scheduled programs.
----
+- - -
 
   Next, edit the .ini files in ~/.leetv/sched/ to reflect your desired schedule.  I
 am working on a graphical configuration editor, but it's not finished yet.  Besides,
@@ -208,7 +210,7 @@ movies - you can use it for any collection of videos, including a normal TV seri
 The only difference is that with a 'regular' series, if random order is chosen, there
 is the possibility of choosing an episode that has been played in the past.  I rarely
 use 'normal' random mode except perhaps for cartoons and collections of unrelated videos.
----
+- - -
 
   OK, there is only one more task to do before you can start enjoying your TV station!
 It's time to create the 'static' videos: bumper.mp4, reset.mp4, and fill.mp4.  Default
@@ -258,7 +260,7 @@ The downside is that you'll be playing lots of commercials
 in unprogrammed slots, you won't get hourly news and weather updates, and your
 TV station won't look as 'professional' - but that may not matter to you.  Alternatively,
 you can just use the provided default videos until you decide to customize.
----
+- - -
 
   OK, it's time to test your setup.  run 'leetv -v' from the command line and see
 what happens.  If all goes well, you'll see a bunch of info messages as
