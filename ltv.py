@@ -279,23 +279,19 @@ class Tv:
                     sc.write('seq = linear\n\n')
 
         # copy the LeeTV media files
-        #
-        # NOTE: need to create copyright-free default videos here
-        # for distribution...
-        #
-        # srcdir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'dist')
-        # files = (self.bumper_video_name,
-        #          self.reset_video_name,
-        #          self.fill_video_name,
-        #          self.news_video_name,
-        #          self.weather_video_name)
-        # for f in files:
-        #     src = os.path.join(srcdir, f)
-        #     dst = os.path.join(directory, f)
-        #     try:
-        #         shutil.copyfile(src, dst)
-        #     except IOError:
-        #         self.log.error('Unable to copy {} to {}'.format(src, dst))
+        srcdir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'dist')
+        files = (self.bumper_video_name,
+                 self.reset_video_name,
+                 self.fill_video_name,
+                 self.news_video_name,
+                 self.weather_video_name)
+        for f in files:
+            src = os.path.join(srcdir, f)
+            dst = os.path.join(directory, f)
+            try:
+                shutil.copyfile(src, dst)
+            except IOError:
+                self.log.error('Unable to copy {} to {}'.format(src, dst))
 
         self.log.warning('Default configuration tree created.')
         self.log.error('Please see LeeTV documentation to create media list files.')

@@ -102,10 +102,10 @@ def main(reset):
     bumper = VideoFileClip("bumper-raw.mp4")
     w, h = screensize = bumper.size
     print(w, h)
-    txtClip = TextClip('LeeTV', color='yellow', font="Glowworm",
+    txtClip = TextClip('LeeTV', color='yellow', font="Bitstream-Vera-Sans-Bold",
                        kerning=5, fontsize=100)
 
-    txtClip2 = TextClip('Commercial\nReset', color='orange', font="Glowworm",
+    txtClip2 = TextClip('Commercial\nReset', color='orange', font="Bitstream-Vera-Sans-Bold",
                         kerning=-1, fontsize=100)
 
     # print(txtClip.list('color'))
@@ -124,7 +124,7 @@ def main(reset):
         # bumper video
         cvc = CompositeVideoClip([txtClip.set_pos(('right', 'bottom'))],
                                  size=screensize)
-
+    cvc.duration = 5
     # use the plugin findobjects to locate and separate each letter
     letters = findObjects(cvc)  # a list of ImageClips
     # letters2 = findObjects(cvc2)
