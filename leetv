@@ -28,7 +28,7 @@
 #  it is designed (primarily) to be triggered at midnight
 #  from a cron job.  Additionally, ltv-getnewsweather should
 #  also be run from cron to generate hourly news and weather
-#  udpates.  For example:
+#  udpates.  For example (crontab entry):
 #
 # --------------------------------------------------------
 # DISPLAY=:0.0
@@ -63,10 +63,10 @@
 #   > leetv [-n] [-s] [-v] [-x] [-t hhmm] [-p player] [-f format] [-l level] [-h]
 #
 #   -n  Don't generate playlist (use existing)
-#   -s  Enable multicast streaming
-#   -v  Show output to screen as well as log file
+#   -s  Enable multicast streaming (VLC only)
+#   -v  Show messages to stdout as well as log file
 #   -x  Don't insert 'canned' videos (bumper, fill, etc.)
-#   -t  hhmm or hh:mm - effective start time 24hr format
+#   -t  hhmm or hh:mm or now - effective start time 24hr format
 #   -p  player (vlc|mpv|none)
 #   -f  format of playlist (m3u8|xspf|pls)
 #   -l  loglevel (DEBUG|INFO|WARNING|ERROR|OFF)
@@ -97,16 +97,16 @@ from ltv import Tv
 
 
 # program version
-__version__ = '1.12'
+__version__ = '1.13-pre1'
 
 
 def get_settings(log, tv, settings, slot, fn):
     """ get settings for this slot and pick the next episode (index) """
     today = date.strftime(date.today(), '%Y%m%d')
     if settings.has_section(slot['series']):
-        lastdate = settings.get(slot['series'], 'lastdate')
-        index = settings.getint(slot['series'], 'lastplayed')
-        skip = settings.getint(slot['series'], 'skip')
+        lastdate = settings.get(slot['series'], 'lastdate', fallback = '00000000')
+        index = settings.getint(slot['series'], 'lastplayed', fallback = 0)
+        skip = settings.getint(slot['series'], 'skip', fallback = 0)
         if (lastdate != today) or slot['seq'].isnumeric():
             # pick a new episode
             if slot['seq'] == 'linear':
@@ -146,7 +146,7 @@ def get_settings(log, tv, settings, slot, fn):
     # ensures that a movie is never picked
     # more than once
     if slot['series'] == tv.movies_name and lastdate != today:
-        # make sure we don't pick a movie that
+        # make sure we didn't pick a movie that
         # we've already played
         movies = ConfigParser()
         movies_file = os.path.join(tv.directory, 'config', 'movies.ini')
@@ -155,8 +155,8 @@ def get_settings(log, tv, settings, slot, fn):
         moviename = os.path.splitext(
             os.path.basename(urllib.parse.unquote(fn[index])))[0]
         if movies.has_section(moviename):
-            # go through whole list until we find an
-            # unplayed movie
+            # we already played this one
+            # go through whole list until we find an unplayed movie
             if slot['seq'] == 'linear' or slot['seq'].isnumeric():
                 tries = len(fn)
             else:
@@ -185,6 +185,7 @@ def get_settings(log, tv, settings, slot, fn):
                 moviename = os.path.splitext(
                     os.path.basename(urllib.parse.unquote(fn[index])))[0]
                 if not movies.has_section(moviename):
+                    # we found an unplayed movie, add it
                     log.debug("Adding movie: {}".format(moviename))
                     movies.add_section(moviename)
                     movies.set(moviename, 'lastdate', today)
@@ -192,12 +193,13 @@ def get_settings(log, tv, settings, slot, fn):
                 tries -= 1
             if not tries:
                 log.info("Unable to find unplayed movie!")
-        else:  # movie has never been played
+        else:  # movie has never been played, add it
             log.debug("Adding movie: {}".format(moviename))
             movies.add_section(moviename)
             movies.set(moviename, 'lastdate', today)
 
         # append chosen movie to movies.ini
+        # so it won't be played again
         log.debug('Updating movies.ini')
         with open(movies_file, 'w') as movf:
             movies.write(movf)
@@ -250,21 +252,25 @@ def main(args):
     settings_file = os.path.join(tv.directory, 'config', 'settings.ini')
     settings.read(settings_file)
 
-    # list of already used commercials
-    used_file = os.path.join(tv.directory, 'config', 'used.lst')
-
     # playlist filename
     playlist_file = os.path.join(tv.directory, today + '.' + args.format.lower())
 
     if args.noplaylist:
-        # see if we already created a playlist today
+        # user doesn't want to create a playlist
+        # see if we already created one for today
         if os.path.isfile(playlist_file):
             # heavy work already done, just restart media player at the correct offset
             log.info('Using existing playlist: {}'.format(playlist_file))
             # figure out where to jump into the playlist
+            # NOTE: I have not found a player yet that allows you to
+            # jump to an arbitrary point in the middle of a video in a playlist
+            # (single video, yes - playlist, no) - however, the capabilty is here
+            # if I ever find something that implements it.  Right now, we will just
+            # play the playlist from the beginning.
             offset_s = tv.get_offset_into_playlist(datetime.now())
             # start playing!
             if args.player.lower() == 'none':
+                # no playlist, no player - not much else for us to do!
                 log.warning("Player 'none' and --noplaylist selected.  What did you want me to do?")
             tv.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
             sys.exit(0)
@@ -278,7 +284,7 @@ def main(args):
     # no overtime videos yet
     overtime_slots = 0
 
-    # determine effective starting time for the playlist
+    # determine effective starting time for the playlist (offset_s)
     # arg format can be '1234' or '12:34' or 'now'
     bad_timestart = False
     if not args.timestart or args.timestart.lower() == 'now':
@@ -305,6 +311,7 @@ def main(args):
     log.info('Run: {}'.format(datetime.now().strftime("%a %b %d, %Y %I:%M%p")))
     log.info('Offset: {} ({}s)'.format(tv.running_time_ms_to_timestamp(offset_s * 1000), offset_s))
 
+    # how many commercials we have in the pool
     log.info('Commercial pool: {}'.format(len(tv.cn)))
 
     # iterate through all the time slots
@@ -334,7 +341,14 @@ def main(args):
         # if we're not starting at midnight, figure out where
         # in the schedule 'now' is located and build from there
         # skip enough slots to reach 'now'
-        if offset_s > (slot['mins'] * 60) and offset_s < ((slot['mins'] + 30) * 60):
+
+        if slot['label'] == '0000' and offset_s < 30:
+            # special case:  sometimes cron starts jobs a few seconds late.
+            # if we're run within 30 seconds of midnight, assume we want
+            # to start at the beginning of the midnight slot and drop
+            # down to normal slot processing.
+            tv.running_time_ms += offset_s * 1000
+        elif offset_s > (slot['mins'] * 60) and offset_s < ((slot['mins'] + 30) * 60):
             # 'now' is somewhere in the current time slot
 
             # skip the bumper and weather/news videos
@@ -411,6 +425,7 @@ def main(args):
             #   '~/.leetv/config/movies.ini'
             #
             if not args.exclude:
+                # bumper video at start of every slot
                 tv.add_bumper_video()
                 if slot['mins'] % 60:
                     # show weather at the bottom of the hour
@@ -454,18 +469,20 @@ def main(args):
                             index = 0
 
                         if int(ft[index]) <= target_ms:
+                            # we can fit another one
                             log.debug("Adding video to current slot")
                             tv.add_video(fn[index], ft[index], series=slot['series'])
                             target_ms -= int(ft[index])
-                            # update_settings(settings, slot, index)
+                            # don't call update_settings() here as these
+                            # are only supplemental videos
                         else:
                             # no room for another video, go on to next slot
                             break
 
             else:
                 # time slot is 'blank', show fill video
-                log.debug('BLANK SLOT: {} (adding fill video)'.format(slot['label']))
                 if not args.exclude:
+                    log.debug('BLANK SLOT: {} (adding fill video)'.format(slot['label']))
                     tv.add_fill_video()
                     continue
 
@@ -513,19 +530,34 @@ def main(args):
     with open(settings_file, 'w') as setf:
         settings.write(setf)
 
+    # update list of already used commercials
+    used_file = os.path.join(tv.directory, 'config', 'used.lst')
     log.info('Updating used.lst')
     with open(used_file, 'w') as usedf:
         for i in tv.used:
             usedf.write(i + '\n')
 
+    # calculate playlist total running time
     total_ms = tv.running_time_ms - (offset_s * 1000)
 
-    # get the playlist ready
+    # get the playlist ready (save to ~/.leetv)
     tv.write_playlist(playlist_file, fmt=args.format.lower())
 
     log.info('Playlist running time: {:.2f} seconds ({:.2f} hrs)'.format(
         total_ms / 1000, tv.ms_to_hr(total_ms)))
+
+    # what was the biggest drift error due to not having enough commercials
+    # of different lengths for an exact fill?
+    #
+    # NOTE: drift is not cumulative (it self corrects) - this number just gives us an idea
+    # of the biggest chunk of time that we failed to find a commercial to fit into
+    # (and thus how 'early' we had to start a show).  Adding videos to the commercial pool
+    # that are shorter than this number will improve/eliminate drift.  A few network logos
+    # (e.g. NBC peacock or CBS 'eye') or station IDs in the 3-5 second range usually does it.
+    # Really, just a few videos in the sub-15 second range will make drift unnoticeable.
     log.info('Maximum time slot drift: {:.2f} seconds'.format(tv.drift_ms / 1000))
+
+    # how many commercials are left in the pool for tomorrow?
     log.info('Commercial pool: {}'.format(len(tv.cn)))
 
     if psutil_installed:

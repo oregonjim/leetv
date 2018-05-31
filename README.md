@@ -140,8 +140,8 @@ time slot.  Optionally, a short 'news' video can be shown at the top of each hou
 and a short 'weather' video can be shown at the bottom of each hour.  These videos
 are created dynamically from scraped web content while the playlist is running.
 Further, each time slot is filled with randomly selected commercials from
-a pool that you provide (YouTube is a rich source for these, and the ```youtube-dl``
-program will enable you to save them locally).  Even though the
+a pool that you provide (YouTube is a rich source for these, and 'youtube-dl'
+will enable you to save them locally).  Even though the
 commercials are chosen at random, they will not be repeated until the entire
 pool is delpeted, at which point the pool is reset.  Similar to this is the
 'MovieNight' feature, where full length movies can be added into the mix.

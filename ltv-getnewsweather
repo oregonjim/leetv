@@ -31,14 +31,54 @@
 #         'if False' to 'if True', and edit the urls to
 #         reflect your preferred news and weather sources.
 #
-#  This is designed to be run as a cron job
+#  BASIC IDEA:
+#         HARD WAY:
+#         - Grab news or weather data from the Web
+#         - Parse to raw text
+#         - Format and render it onto a bitmap
+#         - Make that bitmap conform to video standards
+#           (height & width must both be even at minimum)
+#         - Combine bitmap and soundtrack to create a
+#           specific length video via ffmpeg
+#
+#         EASY WAY:
+#         - Launch Web browser in an offscreen framebuffer
+#         - Point it at the desired URL
+#         - Grab screen shot of Web page
+#         - Combine screenshot and soundtrack to create
+#         - a specific length video via ffmpeg
+#
+#  The 'hard' way looks nicer because you have total
+#  control over the text layout and background image.
+#  However, the parsing code needs to be maintained
+#  as your source providers change their data format.
+#
+#  The 'easy' way is virtually maintenance free as
+#  you're only dealing with a screen grab of a Web page.
+#  However, most Web pages these days are filled with
+#  ads and other extraneous info - you must usually
+#  scroll down quite a bit to get to the 'real' data.
+#  That doesn't work with a screen grab.
+#
+#
+#  This is designed to be run as a cron job:
 #
 #  "ltv-getnewsweather -n" at quarter till every hour
 #  "ltv-getnewsweather -w" at quarter past every hour
 #
+#  (that gives us plenty of time to connect/download/render
+#  before the video comes up in the playlist rotation
+#  at the top/bottom of the hour)
+#
 #  It can also be run on demand at any time
 #
-#  Last update: 2018-05-28
+#  Consider this to be somewhat 'fluid' code, due to
+#  the fluid nature of the data sources.  That's why it
+#  looks more like a one-off script than finished
+#  production code.
+#
+#
+#  Last update: 2018-05-30
 #
 import sys
 import os
@@ -50,7 +90,10 @@ from datetime import date, datetime
 
 from PIL import Image, ImageDraw, ImageFont
 from bs4 import BeautifulSoup
+
+# use Firefox if you don't have Chrome installed
 from selenium.webdriver import Chrome
+
 from pyvirtualdisplay import Display
 
 from leeutils import *
@@ -171,7 +214,10 @@ def main(weather, news, verbose):
             # url = 'http://www.bbc.com/news'
             url = 'https://www.foxnews.com/'
             filename = 'news.png'
+            # create an X server in a virtual frame buffer to contain the browser
+            # so we don't upset our local display while it's playing videos
             with Display(visible=0, size=(2112, 1188)) as dsp:
+                # launch Chrome (or Firefox) in the virtual framebuffer
                 browser = Chrome()
                 # browser.maximize_window()
                 # browser.fullscreen_window()
@@ -191,9 +237,12 @@ def main(weather, news, verbose):
                 articles = []
                 if (res.status_code == 200):
                     soup = BeautifulSoup(res.content, 'html.parser')
+                    # articles are inside <H2> tags with 'title' class
                     l = soup.find_all('h2', class_='title')
                     for article in l:
+                        # reduce to just the <a> tags
                         x = article.find('a')
+                        # grab the titles of all non-video articles
                         if str(x).find('video') == -1:
                             articles.append(article.get_text())
 
@@ -212,6 +261,11 @@ def main(weather, news, verbose):
                 x = int(base.size[0] * .1)
                 y = (base.size[1] - 320) // 10
 
+                # only pull the top 5 news headlines from our list
+                # should check here that we have at least five,
+                # but there always seems to be a few dozen (at least)
+                # by the time I make the code bulletproof, Fox will
+                # have changed their format anyway...
                 for i in range(0, 5):
                     d.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
 

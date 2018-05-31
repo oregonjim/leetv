@@ -171,18 +171,18 @@ class Tv:
 
             # get global default settings
             if settings.has_section('LEETV_SETTINGS'):
-                self.movies_name = settings.get('LEETV_SETTINGS', 'movies')
-                self.commercials_name = settings.get('LEETV_SETTINGS', 'commercials')
-                self.bumper_video_name = settings.get('LEETV_SETTINGS', 'bumpervideo')
-                self.bumper_video_time = settings.get('LEETV_SETTINGS', 'bumpervideotime')
-                self.reset_video_name = settings.get('LEETV_SETTINGS', 'resetvideo')
-                self.reset_video_time = settings.get('LEETV_SETTINGS', 'resetvideotime')
-                self.fill_video_name = settings.get('LEETV_SETTINGS', 'fillvideo')
-                self.fill_video_time = settings.get('LEETV_SETTINGS', 'fillvideotime')
-                self.weather_video_name = settings.get('LEETV_SETTINGS', 'weathervideo')
-                self.weather_video_time = settings.get('LEETV_SETTINGS', 'weathervideotime')
-                self.news_video_name = settings.get('LEETV_SETTINGS', 'newsvideo')
-                self.news_video_time = settings.get('LEETV_SETTINGS', 'newsvideotime')
+                self.movies_name = settings.get('LEETV_SETTINGS', 'movies', fallback = self.movies_name)
+                self.commercials_name = settings.get('LEETV_SETTINGS', 'commercials', fallback = self.commercials_name)
+                self.bumper_video_name = settings.get('LEETV_SETTINGS', 'bumpervideo', fallback = self.bumper_video_name)
+                self.bumper_video_time = settings.get('LEETV_SETTINGS', 'bumpervideotime', fallback = self.bumper_video_time)
+                self.reset_video_name = settings.get('LEETV_SETTINGS', 'resetvideo', fallback = self.reset_video_name)
+                self.reset_video_time = settings.get('LEETV_SETTINGS', 'resetvideotime', fallback = self.reset_video_time)
+                self.fill_video_name = settings.get('LEETV_SETTINGS', 'fillvideo', fallback = self.fill_video_name)
+                self.fill_video_time = settings.get('LEETV_SETTINGS', 'fillvideotime', fallback = self.fill_video_time)
+                self.weather_video_name = settings.get('LEETV_SETTINGS', 'weathervideo', fallback = self.weather_video_name)
+                self.weather_video_time = settings.get('LEETV_SETTINGS', 'weathervideotime', fallback = self.weather_video_time)
+                self.news_video_name = settings.get('LEETV_SETTINGS', 'newsvideo', fallback = self.news_video_name)
+                self.news_video_time = settings.get('LEETV_SETTINGS', 'newsvideotime', fallback = self.news_video_time)
 
             else:
                 settings.add_section('LEETV_SETTINGS')

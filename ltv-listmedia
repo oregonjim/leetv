@@ -28,13 +28,24 @@
 #  Alternatively, see ltv-listallmedia for a batch
 #  oriented version for large collections.
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-05-30
 #
 #  File format:  videoFilename : DurationInMilliseconds <newline>
 #
-#  File names are pre-parsed for use in various playlist formats
+#  File names are pre-parsed (url-quoted)
+#  for use in various playlist formats
 #
-#  USAGE:    ltv-listmedia [-v] [-d directory] -n name
+#  USAGE: ltv-listmedia [-v] [-d directory] -n name
+#         If -d is not specified, the current
+#         working directory is used.
+#
+#
+#  NOTE:  If you find that, one day, leetv seems to be playing
+#         your videos waaaay earlier than you expected, or an
+#         entire show seems to be missing, it means that you
+#         moved around or renamed a bunch of your videos and
+#         forgot to re-run ltv-listmedia to update your lists.
+#         Ask me how I know.
 #
 import sys
 import os
