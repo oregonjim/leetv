@@ -144,9 +144,8 @@ a pool that you provide (YouTube is a rich source for these, and 'youtube-dl'
 will enable you to save them locally).  Even though the
 commercials are chosen at random, they will not be repeated until the entire
 pool is delpeted, at which point the pool is reset.  Similar to this is the
-'MovieNight' feature, where full length movies can be added into the mix.
-They can also be chosen at random, and are added to a list when chosen so that
-they will not be repeated.
+'random episode' feature, where movies or TV series' episodes can be chosen at random,
+and are added to a list when chosen so that they will not be repeated.
 
   When creating the daily schedules, each 1/2 hour time slot can specify
 a particular series to play in either linear or random order.  Also supported
@@ -223,8 +222,9 @@ this quickstart:
 
 ~/.leetv/config:
     settings.ini    # global settings
-    movies.ini      # list of movies already played (created as needed)
     used.lst        # list of commercials already used (created as needed)
+    <series>.ini    # any series programmed for 'random' play will
+                    # get a file here listing played episodes (created as needed)
 
 ~/.leetv/log:
                     # initially empty
@@ -278,7 +278,9 @@ are two fields: ```series``` and ```seq```.  Series is the name of one of your m
 above (e.g. 'MyShow', without the .lst extension).  You can leave slots blank if no
 programming is desired at that time (the 'fill' video will be shown).  The 'seq' field
 can be set to 'linear', 'random', or a numeric sequence.  Linear means that your shows
-will be played in order, day after day.  Random will pick a random episode.  A numeric sequence is for
+will be played in order, day after day.  When you run out of episodes, it will wrap around
+to the beginning and note (in the log) that the series rolled over.  Random will pick a random episode,
+and also keep track of all episodes already played so they won't be repeated.  A numeric sequence is for
 when you want 'binge watch' mode - the same series in more than one time slot in a given
 day.  In this case, the FIRST time slot specifies linear or random for 'seq', the second
 slot specifies the numeric value '2', the third slot is '3', and so on.  Here are some
@@ -312,16 +314,6 @@ examples:
   created automatically the first time you ran leetv.  While you can leave slots
   blank, you should not delete them.  Each schedule file must have all 48 slots present.)
 
-  A special case is the series named ```MovieNight``` (by default - this can be changed
-in ```settings.ini```).  If you specify this name for the series, leetv will keep track of all
-the videos played (in ```~/.leetv/config/movies.ini```) and never play the same movie twice.
-I use this to play a random movie from my collection a couple of times a week - and I
-don't want to see the same movie again unless I delete it from ```movies.ini``` (or delete
-the movies.ini file altogether).  Nothing says that the ```MovieNight``` list has to contain
-movies - you can use it for any collection of videos, including a normal TV series.
-The only difference is that with a 'regular' series, if random order is chosen, there
-is the possibility of choosing an episode that has been played in the past.  I rarely
-use 'normal' random mode except perhaps for cartoons and collections of unrelated videos.
 - - -
 
   OK, there is only one more task to do before you can start enjoying your TV station!

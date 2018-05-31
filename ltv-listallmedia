@@ -108,6 +108,7 @@ tvlist = (
             ["Television/Friends/", "Friends"],
             ["Television/Full House/", "FullHouse"],
             ["Television/F Troop/", "FTroop"],
+            ["Television/Game Shows/", "GameShows"],
             ["Television/Get Smart/", "GetSmart"],
             ["Television/Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
             ["Television/Gidget/", "Gidget"],
@@ -353,7 +354,10 @@ def main(quiet):
     else:
         log = Log(level='INFO')
 
-    # first, check for new directories not added to the lists above
+    # first, check for any directories below the base tv directory
+    # that are not represented in the list above
+    # this means I added a new series on disk (or renamed one)
+    # but forgot to add it to the list above
     for name in os.listdir(os.path.join(basetv, 'Television')):
         full = os.path.join('Television', name) + os.sep
         found = False
@@ -363,10 +367,14 @@ def main(quiet):
         if not found:
             log.warning("Directory {} not found in list!".format(full))
             try:
+                # since the whole process can take a long time,
+                # I may want to abort and fix the list before
+                # continuing
                 input("Press enter to continue anyway, ^C to exit\n")
             except KeyboardInterrupt:
                 sys(exit(1))
 
+    # do the same for the cartoons
     for name in os.listdir(os.path.join(basetv, 'Cartoons')):
         full = os.path.join('Cartoons', name) + os.sep
         found = False
@@ -379,6 +387,8 @@ def main(quiet):
                 input("Press enter to continue anyway, ^C to exit\n")
             except KeyboardInterrupt:
                 sys(exit(1))
+
+    # no need to check the movies since I keep them all in a single tree
 
     try:
         input("All directories accounted for.  Press enter to create lists:")

@@ -70,7 +70,6 @@ class Tv:
     commercial_reset = False
 
     # default values
-    movies_name = 'MovieNight'
     commercials_name = 'Commercials'
     bumper_video_name = 'bumper.mp4'
     bumper_video_time = '5000'
@@ -171,7 +170,6 @@ class Tv:
 
             # get global default settings
             if settings.has_section('LEETV_SETTINGS'):
-                self.movies_name = settings.get('LEETV_SETTINGS', 'movies', fallback = self.movies_name)
                 self.commercials_name = settings.get('LEETV_SETTINGS', 'commercials', fallback = self.commercials_name)
                 self.bumper_video_name = settings.get('LEETV_SETTINGS', 'bumpervideo', fallback = self.bumper_video_name)
                 self.bumper_video_time = settings.get('LEETV_SETTINGS', 'bumpervideotime', fallback = self.bumper_video_time)
@@ -186,7 +184,6 @@ class Tv:
 
             else:
                 settings.add_section('LEETV_SETTINGS')
-                settings.set('LEETV_SETTINGS', 'movies', self.movies_name)
                 settings.set('LEETV_SETTINGS', 'commercials', self.commercials_name)
                 settings.set('LEETV_SETTINGS', 'bumpervideo', self.bumper_video_name)
                 settings.set('LEETV_SETTINGS', 'bumpervideotime', self.bumper_video_time)

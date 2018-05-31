@@ -126,6 +126,25 @@ def get_settings(log, tv, settings, slot, fn):
                     index -= len(fn)
             else:  # slot['seq'] is 'random'
                 index = random.randrange(0, len(fn))
+                # check to see if we've picked this index in the past
+                rndseries = ConfigParser()
+                rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
+                rndseries.read(rndseries_file)
+                name = os.path.splitext(
+                    os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                if rndseries.has_section(name):
+                    tries = len(fn) * 10 + 1
+                    while tries:
+                        index = random.randrange(0, len(fn))
+                        name = os.path.splitext(
+                            os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                        if not rndseries.has_section(name):
+                            # we found an unplayed episode
+                            break
+                        tries -= 1
+                    if not tries:
+                        log.info("Unable to find unplayed episode for {}".format(slot['series']))
+
     else:
         # no saved section, start a new one
         settings.add_section(slot['series'])
@@ -141,79 +160,48 @@ def get_settings(log, tv, settings, slot, fn):
             index = int(slot['seq']) - 2
         else:  # slot['seq'] is 'random'
             index = random.randrange(0, len(fn))
-
-    # special processing for 'MovieNight'
-    # ensures that a movie is never picked
-    # more than once
-    if slot['series'] == tv.movies_name and lastdate != today:
-        # make sure we didn't pick a movie that
-        # we've already played
-        movies = ConfigParser()
-        movies_file = os.path.join(tv.directory, 'config', 'movies.ini')
-        movies.read(movies_file)
-
-        moviename = os.path.splitext(
-            os.path.basename(urllib.parse.unquote(fn[index])))[0]
-        if movies.has_section(moviename):
-            # we already played this one
-            # go through whole list until we find an unplayed movie
-            if slot['seq'] == 'linear' or slot['seq'].isnumeric():
-                tries = len(fn)
-            else:
+            # check to see if we've picked this index in the past
+            rndseries = ConfigParser()
+            rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
+            rndseries.read(rndseries_file)
+            name = os.path.splitext(
+                os.path.basename(urllib.parse.unquote(fn[index])))[0]
+            if rndseries.has_section(name):
                 tries = len(fn) * 10 + 1
-            while tries:
-                if slot['seq'] == 'linear':
-                    if not skip:
-                        index += 1
-                    else:
-                        index += skip
-                    if index >= len(fn):
-                        log.info("Movie list {} rolled over".format(
-                            slot['series']))
-                        index = 0
-                elif slot['seq'].isnumeric():
-                    # multiple movies in one day
-                    index += int(slot['seq']) - 1
-                    if index >= len(fn):
-                        # end of movie list, start over
-                        log.info("Movie list {} rolled over".format(
-                            slot['series']))
-                        index -= len(fn)
-                else:  # slot['seq'] is 'random'
+                while tries:
                     index = random.randrange(0, len(fn))
-
-                moviename = os.path.splitext(
-                    os.path.basename(urllib.parse.unquote(fn[index])))[0]
-                if not movies.has_section(moviename):
-                    # we found an unplayed movie, add it
-                    log.debug("Adding movie: {}".format(moviename))
-                    movies.add_section(moviename)
-                    movies.set(moviename, 'lastdate', today)
-                    break
-                tries -= 1
-            if not tries:
-                log.info("Unable to find unplayed movie!")
-        else:  # movie has never been played, add it
-            log.debug("Adding movie: {}".format(moviename))
-            movies.add_section(moviename)
-            movies.set(moviename, 'lastdate', today)
-
-        # append chosen movie to movies.ini
-        # so it won't be played again
-        log.debug('Updating movies.ini')
-        with open(movies_file, 'w') as movf:
-            movies.write(movf)
+                    name = os.path.splitext(
+                        os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                    if not rndseries.has_section(name):
+                        # we found an unplayed episode
+                        break
+                    tries -= 1
+                if not tries:
+                    log.info("Unable to find unplayed episode for {}".format(slot['series']))
 
     return index
 
 
-def update_settings(settings, slot, index):
+def update_settings(log, tv, settings, slot, fn, index):
     """ update settings after adding a video """
     today = date.strftime(date.today(), '%Y%m%d')
     if not slot['seq'].isnumeric():
         settings.set(slot['series'], 'lastplayed', str(index))
         settings.set(slot['series'], 'lastdate', today)
         settings.set(slot['series'], 'skip', '0')
+        if not slot['seq'] == 'linear':
+            # seq is 'random': save name so we don't play it again
+            rndseries = ConfigParser()
+            rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
+            rndseries.read(rndseries_file)
+            name = os.path.splitext(
+                os.path.basename(urllib.parse.unquote(fn[index])))[0]
+            if not rndseries.has_section(name):
+                log.debug("Marking played episode: {}".format(name))
+                rndseries.add_section(name)
+                rndseries.set(name, 'lastdate', today)
+                with open(rndseries_file, 'w') as rndf:
+                    rndseries.write(rndf)
     else:
         settings.set(slot['series'], 'skip', str(slot['seq']))
 
@@ -375,7 +363,7 @@ def main(args):
                 if int(ft[index]) <= target_ms:
                     tv.add_video(fn[index], ft[index], series=slot['series'])
                     target_ms -= int(ft[index])
-                    update_settings(settings, slot, index)
+                    update_settings(log, tv, settings, slot, fn, index)
 
             log.debug(
                 'INITIAL COMMERCIAL FILL: Target: {:.3f}m Slot: {} Mins: {} Running: {:.3f}'.format(
@@ -417,13 +405,6 @@ def main(args):
             #   slots as necessary and backfill the balance
             #   of the final slot with commercials.
             #
-            #   Special processing for 'MovieNight':
-            #   If a 'MovieNight' slot is detected,
-            #   pick a movie and make sure it's not one
-            #   that's been played before.
-            #   The list of played movies is kept in
-            #   '~/.leetv/config/movies.ini'
-            #
             if not args.exclude:
                 # bumper video at start of every slot
                 tv.add_bumper_video()
@@ -443,7 +424,7 @@ def main(args):
                 # add the main video to the master list
                 # and save the lastplayed/lastdate info
                 tv.add_video(fn[index], ft[index], series=slot['series'])
-                update_settings(settings, slot, index)
+                update_settings(log, tv, settings, slot, fn, index)
 
                 # if current video > 30 minutes, abort Commercial fill
                 # and figure out how many time slots to skip before
@@ -520,7 +501,7 @@ def main(args):
                     if int(ft[index]) <= target_ms:
                         tv.add_video(fn[index], ft[index], series=slot['series'])
                         target_ms -= int(ft[index])
-                        update_settings(settings, slot, index)
+                        update_settings(log, tv, settings, slot, fn, index)
 
                 # do the commercial fill
                 tv.do_commercial_fill(target_ms)
