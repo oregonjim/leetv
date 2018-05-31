@@ -2,7 +2,28 @@
 ## A personal television station :tv: designed for 24/7 unattended operation.
 - - -
 
-Works with any operating system that supports Python 3.x and VLC or mpv.
+  Do you have a large collection of TV shows stored on a hard drive somewhere?
+Have you spent weeks (or months) ripping all your TV and movie DVDs to media files?
+Have you ever wanted a program that could take your entire collection and just
+play it according to a daily schedule, all day long, every day (like a real TV station does),
+without requiring you to do anything beyond the initial schedule programming?
+Do you wish you could choose your OWN commercials to play between shows (perhaps
+some memorable favorites from your childhood, or maybe a few of those SuperBowl halftime legends)
+rather than watch the drivel that plagues today's television?  Want to get rid of Cable
+because you realized that you're paying for 1000 channels worth of stuff that doesn't interest you?
+
+That's what LeeTV is for.  It's a set-it-and-forget-it application that turns
+an unused computer into an always on, always playing personal TV station - one
+that plays the content YOU want.
+
+My own setup has been running continuously for months now.  It requires
+nothing of me.  I will occasionally ssh into my LeeTV box to change a
+schedule, or to add a few more commercials that I found on YouTube, but that's it.
+I don't even have to stop or restart anything.  It works so well that I added
+a wireless HDMI transmitter so that the signal is available on any TV in the house!
+- - -
+
+LeeTV works with any operating system that supports Python 3.x and VLC or mpv.
 
   LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
 under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
@@ -31,13 +52,14 @@ your favorite show).
 
 ### Hardware
 
-Any computer and OS capable of running VLC (or mpv) smoothly.
+Any computer and OS capable of running mpv (or VLC) smoothly, and
+compatible with your TV's video/audio input (e.g. HDMI).
 
-HDMI video/audio out is optimum.
 
 Internet connectivity only needed if weather/news updates are enabled.
 
-OS: Linux, MacOS, Windows
+Local network connectivity is desirable for remote control via ssh,
+but not necessary.
 
 Tested:
 ```
@@ -207,13 +229,15 @@ this quickstart:
 ```
 - - -
 
-  Next, create all your media list files using ```ltv-listmedia```.  All of
-the utilities support a '--help' flag to show basic usage.  An example:
+  Next, create all your media list files using ```ltv-listmedia```.  Note that all of
+the utilities, including ```ltv-listmedia```, support a '--help' option to explain basic usage.
 
-```$ ltv-listmedia -v -d /mnt/tv/myshow -n MyShow```
+An example:
+
+```$ ltv-listmedia -v -d /mnt/tv/myshow/ -n MyShow```
 
 This will create the media list file ```~/.leetv/media/MyShow.lst``` containing the
-filenames and durations of all video files under the directory ```/mnt/tv/myshow```.
+filenames and durations of all video files under the directory ```/mnt/tv/myshow/```.
 You can then specify the name ```MyShow``` in the schedule(s) to refer to this series.
 Note that the list is sorted alphanumerically, so if you want to play all the episodes
 in a series in order, they must be named in that order.  It helps to prefix file
