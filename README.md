@@ -173,11 +173,13 @@ resorting to commercials.
   length, and *something* has to fill the time between shows.  So, that's
   what the commercials are for.  I can fit them in like a jigsaw puzzle
   to fill the time.  The larger and more diverse your commercial pool is (duration-wise),
-  the easier it is to make all you programs start right on the dot.  Plus,
+  the easier it is to make all your programs start right on the dot.  Plus,
   at least you get to choose your commercials, and you don't have to
   put up with the offensive (to you) or idiotic ones.  I've found that
   I rather enjoy watching some of the 'classic' commercials, with their
-  memorable jingles and comedy...
+  memorable jingles and comedy.  If you have kids in the house, you
+  can have some fun by letting them create their OWN commercials that
+  show up on 'live TV' throughout the day...
 - - -
 
   A number of utility programs are included to create the required
