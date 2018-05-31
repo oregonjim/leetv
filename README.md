@@ -98,6 +98,8 @@ If you want to normalize audio on a bunch of videos (e.g. commercials): ```pip3 
 
 Fonts used by various utilities: ```dnf install bitstream-vera*```
 
+For creating your pool of commercials from sources like YouTube: ```dnf install youtube-dl```
+
 ##### For ltv-createbumper:
 
 Animated text-on-video: ```dnf install python3-numpy```
@@ -138,7 +140,8 @@ time slot.  Optionally, a short 'news' video can be shown at the top of each hou
 and a short 'weather' video can be shown at the bottom of each hour.  These videos
 are created dynamically from scraped web content while the playlist is running.
 Further, each time slot is filled with randomly selected commercials from
-a pool that you provide (YouTube is a rich source for these).  Even though the
+a pool that you provide (YouTube is a rich source for these, and the ```youtube-dl``
+program will enable you to save them locally).  Even though the
 commercials are chosen at random, they will not be repeated until the entire
 pool is delpeted, at which point the pool is reset.  Similar to this is the
 'MovieNight' feature, where full length movies can be added into the mix.
@@ -231,7 +234,7 @@ this quickstart:
 - - -
 
   Next, create all your media list files using ```ltv-listmedia```.  Note that all of
-the utilities, including ```ltv-listmedia```, support a '--help' option to explain basic usage.
+the utilities, including ```ltv-listmedia```, support a ```--help``` option to explain basic usage.
 
 An example:
 
@@ -312,7 +315,7 @@ It's time to create the 'static' videos: ```bumper.mp4```, ```reset.mp4```, and 
 videos are provided in the distribution to get you started, but this is an area intended for
 customization.  You can
 get as fancy or creative as you want here, or you can be done with it in a minute or two.
-The basic idea is to pick a still image and optionally a soundrack, and run them through
+The basic idea is to pick a still image and optionally a soundtrack, and run them through
 the ```makevideos``` shell script.  This will call ffmpeg to create the videos.  Optionally,
 you can postprocess with the ```ltv-createbumper``` utility to create animated text effects
 if you desire to.  If you don't care about being notified whenever the pool of commercials
