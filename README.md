@@ -128,14 +128,15 @@ to retrieve your news and weather content.
 
 ## Overview
 
-  The basic idea is to take a set of 'schedule' files consisting of 1/2 hour
-'time slots', one for each day of the week, and a set of 'media list' files,
+  The basic idea is to take a set of 'schedule' files (one for each day of the week)
+consisting of 1/2 hour
+'time slots', and a set of 'media list' files,
 one for each TV series you have stored on local or remote media, and create a 24-hour
 playlist (in one of several formats) according to said schedule, passing that
-playlist to mpv or vlc. In addition, a short 'bumper' video is added to each
+playlist to mpv or vlc for viewing. In addition, a short 'bumper' video is added to each
 time slot.  Optionally, a short 'news' video can be shown at the top of each hour,
 and a short 'weather' video can be shown at the bottom of each hour.  These videos
-are created dynamically (called hourly by cron) while the playlist is running.
+are created dynamically from scraped web content while the playlist is running.
 Further, each time slot is filled with randomly selected commercials from
 a pool that you provide (YouTube is a rich source for these).  Even though the
 commercials are chosen at random, they will not be repeated until the entire
