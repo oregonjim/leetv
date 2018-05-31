@@ -166,6 +166,18 @@ only 10 minutes long (e.g. a cartoon), rather than fill the time slot with
 20 minutes of commercials, the program will try to fit more program
 videos (as many as will fit) from that series into the time slot before
 resorting to commercials.
+
+  While we're on the subject - why commercials?  Well, I want all my programs
+  to start on the hour or 1/2 hour, just like 'normal' TV.  That way,
+  I know what shows start when, every day.  But programs are variable
+  length, and *something* has to fill the time between shows.  So, that's
+  what the commercials are for.  I can fit them in like a jigsaw puzzle
+  to fill the time.  The larger and more diverse your commercial pool is (duration-wise),
+  the easier it is to make all you programs start right on the dot.  Plus,
+  at least you get to choose your commercials, and you don't have to
+  put up with the offensive (to you) or idiotic ones.  I've found that
+  I rather enjoy watching some of the 'classic' commercials, with their
+  memorable jingles and comedy...
 - - -
 
   A number of utility programs are included to create the required
