@@ -24,10 +24,10 @@
 #
 #  A leetv utility program
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-05-31
 #
 #  Create all media file lists for leetv.  Also warns of directories
-#  not present in the list.
+#  not present in the list (and vice-versa).
 #
 #  NOTE NOTE NOTE: the tables must be customized for your particular
 #  collection of media files.  Alternatively, you can use another program,
@@ -36,9 +36,9 @@
 #
 #  File format:  videoFilename : DurationInMilliseconds <newline>
 #
-#  File names are pre-parsed for use in various playlist formats
+#  File names are pre-parsed (url-quoted) for use in various playlist formats
 #
-#  USAGE:    ltv-listallmedia [-v]
+#  USAGE:    ltv-listallmedia [-q]
 #
 import sys
 import os
@@ -51,8 +51,8 @@ import re
 from leeutils import *
 
 
-basetv = "/mnt/tv"
-basecartoon = "/mnt/tv"
+basetv = "/mnt/tv/Television"
+basecartoon = "/mnt/tv/Cartoons"
 basemovie = "/mnt/movies"
 
 movielist = (
@@ -62,177 +62,178 @@ movielist = (
              )
 
 tvlist = (
-            ["Television/Addams Family/", "AddamsFamily"],
-            ["Television/Alfred Hitchcock Presents/", "AlfredHitchcock"],
-            ["Television/All In The Family/", "AllInTheFamily"],
-            ["Television/America's Funniest Home Videos/", "AFV"],
-            ["Television/Andy Griffith/", "AndyGriffith"],
-            ["Television/Banana Splits/", "BananaSplits"],
-            ["Television/Barney Miller/", "BarneyMiller"],
-            ["Television/Batman/", "Batman"],
-            ["Television/Battlestar Galactica/", "BattlestarGalactica"],
-            ["Television/Baywatch/", "Baywatch"],
-            ["Television/Beat the Clock/", "BeatTheClock"],
-            ["Television/Benson/", "Benson"],
-            ["Television/Beverly Hillbillies/", "BeverlyHillbillies"],
-            ["Television/Bewitched/", "Bewitched"],
-            ["Television/Big Bang Theory/", "BigBangTheory"],
-            ["Television/Bob Newhart/", "BobNewhart"],
-            ["Television/Bosom Buddies/", "BosomBuddies"],
-            ["Television/Brady Bunch/", "BradyBunch"],
-            ["Television/Card Sharks/", "CardSharks"],
-            ["Television/Cheers/", "Cheers"],
-            ["Television/Chico and the Man/", "ChicoAndTheMan"],
-            ["Television/CHiPs/", "Chips"],
-            ["Television/Christmas Shows/", "ChristmasShows"],
-            ["Television/Columbo/", "Columbo"],
-            ["Television/Commercials/", "Commercials"],
-            ["Television/Computer Chronicles/", "ComputerChronicles"],
-            ["Television/Daniel Boone/", "DanielBoone"],
-            ["Television/Dennis the Menace/", "DennisTheMenace"],
-            ["Television/Dick Van Dyke/", "DickVanDyke"],
-            ["Television/Diff'rent Strokes/", "DifferentStrokes"],
-            ["Television/Dinosaurs/", "Dinosaurs"],
-            ["Television/Donny and Marie/", "DonnyAndMarie"],
-            ["Television/Dukes of Hazzard/", "DukesOfHazzard"],
-            ["Television/Everybody Loves Raymond/", "EverybodyLovesRaymond"],
-            ["Television/Facts of Life/", "FactsOfLife"],
-            ["Television/Family Feud/", "FamilyFeud"],
-            ["Television/Family Matters/", "FamilyMatters"],
-            ["Television/Family Ties/", "FamilyTies"],
-            ["Television/Fantasy Island/", "FantasyIsland"],
-            ["Television/Fawlty Towers/", "FawltyTowers"],
-            ["Television/Flipper (1964)/", "Flipper"],
-            ["Television/Flying Nun/", "FlyingNun"],
-            ["Television/Frasier/", "Frasier"],
-            ["Television/Fresh Prince of Bel-Air/", "FreshPrince"],
-            ["Television/Friends/", "Friends"],
-            ["Television/Full House/", "FullHouse"],
-            ["Television/F Troop/", "FTroop"],
-            ["Television/Game Shows/", "GameShows"],
-            ["Television/Get Smart/", "GetSmart"],
-            ["Television/Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
-            ["Television/Gidget/", "Gidget"],
-            ["Television/Gilligan's Island/", "GilligansIsland"],
-            ["Television/Gomer Pyle USMC/", "GomerPyle"],
-            ["Television/Good Times/", "GoodTimes"],
-            ["Television/Green Acres/", "GreenAcres"],
-            ["Television/Growing Pains/", "GrowingPains"],
-            ["Television/Gunsmoke/", "Gunsmoke"],
-            ["Television/Happy Days/", "HappyDays"],
-            ["Television/Hee Haw/", "HeeHaw"],
-            ["Television/Hill Street Blues/", "HillStreetBlues"],
-            ["Television/Hogan's Heroes/", "HogansHeroes"],
-            ["Television/Home Improvement/", "HomeImprovement"],
-            ["Television/Honeymooners/", "Honeymooners"],
-            ["Television/Honey West/", "HoneyWest"],
-            ["Television/H.R. Pufnstuf/", "HRPufnstuf"],
-            ["Television/I Dream of Jeannie/", "IDreamOfJeannie"],
-            ["Television/King of Queens/", "KingOfQueens"],
-            ["Television/Knight Rider/", "KnightRider"],
-            ["Television/Kung Fu/", "KungFu"],
-            ["Television/Land of the Giants/", "LandOfTheGiants"],
-            ["Television/Last Man Standing (2011)/", "LastManStanding"],
-            ["Television/Laurel & Hardy/", "LaurelAndHardy"],
-            ["Television/Laverne & Shirley/", "LaverneAndShirley"],
-            ["Television/Leave It To Beaver/", "LeaveItToBeaver"],
-            ["Television/Let's Make A Deal/", "LetsMakeADeal"],
-            ["Television/Little House on the Prairie/", "LittleHouseOnThePrairie"],
-            ["Television/Logan's Run/", "LogansRun"],
-            ["Television/Lost In Space/", "LostInSpace"],
-            ["Television/Love Boat/", "LoveBoat"],
-            ["Television/Lucy Show/", "LucyShow"],
-            ["Television/Mary Tyler Moore/", "MaryTylerMoore"],
-            ["Television/MASH/", "MASH"],
-            ["Television/Match Game/", "MatchGame"],
-            ["Television/McHale's Navy/", "McHalesNavy"],
-            ["Television/Misc/", "MiscTV"],
-            ["Television/Mission Impossible/", "MissionImpossible"],
-            ["Television/Mister Ed/", "MisterEd"],
-            ["Television/Mister Rogers/", "MisterRogers"],
-            ["Television/Monk/", "Monk"],
-            ["Television/Monty Python's Flying Circus/", "MontyPython"],
-            ["Television/Mork & Mindy/", "MorkAndMindy"],
-            ["Television/Mr Wizard/", "MrWizard"],
-            ["Television/Munsters/", "Munsters"],
-            ["Television/Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
-            ["Television/My Favorite Martian/", "MyFavoriteMartian"],
-            ["Television/My Three Sons/", "MyThreeSons"],
-            ["Television/Newhart/", "Newhart"],
-            ["Television/Odd Couple/", "OddCouple"],
-            ["Television/One Day at a Time/", "OneDayAtATime"],
-            ["Television/Partridge Family/", "PartridgeFamily"],
-            ["Television/Password/", "Password"],
-            ["Television/Petticoat Junction/", "PetticoatJunction"],
-            ["Television/Phil Silvers Show/", "PhilSilvers"],
-            ["Television/Planet of the Apes/", "PlanetOfTheApes"],
-            ["Television/Police Squad/", "PoliceSquad"],
-            ["Television/Quark/", "Quark"],
-            ["Television/Rhoda/", "Rhoda"],
-            ["Television/Rockford Files/", "RockfordFiles"],
-            ["Television/Room 222/", "Room222"],
-            ["Television/Smothers Brothers/", "SmothersBrothers"],
-            ["Television/Soap/", "Soap"],
-            ["Television/Space 1999/", "Space1999"],
-            ["Television/Star Trek TOS/", "StarTrek"],
-            ["Television/Survivors/", "Survivors"],
-            ["Television/Taxi/", "Taxi"],
-            ["Television/The Adventures of Ozzie and Harriet/", "OzzieAndHarriet"],
-            ["Television/The Best of the Dean Martin Show/", "DeanMartin"],
-            ["Television/The Carol Burnett Show/", "CarolBurnett"],
-            ["Television/The Golden Girls/", "GoldenGirls"],
-            ["Television/The Life of Riley (1953)/", "LifeOfRiley"],
-            ["Television/The Office (US)/", "Office"],
-            ["Television/The Paper Chase/", "PaperChase"],
-            ["Television/The Price is Right/", "PriceIsRight"],
-            ["Television/The Starlost (1973)/", "Starlost"],
-            ["Television/Three's Company/", "ThreesCompany"],
-            ["Television/Three Stooges/", "ThreeStooges"],
-            ["Television/Time Tunnel/", "TimeTunnel"],
-            ["Television/Tremors/", "Tremors"],
-            ["Television/Twilight Zone/", "TwilightZone"],
-            ["Television/UFO/", "UFO"],
-            ["Television/Undersea World of Jacques Cousteau/", "JacquesCousteau"],
-            ["Television/Waltons/", "Waltons"],
-            ["Television/Welcome Back Kotter/", "WelcomeBackKotter"],
-            ["Television/What's My Line/", "WhatsMyLine"],
-            ["Television/Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
-            ["Television/Wild Wild West/", "WildWildWest"],
-            ["Television/Wings/", "Wings"],
-            ["Television/WKRP In Cincinnati/", "WKRP"],
-            ["Television/Wonderful World of Disney/", "WWOD"]
+            ["Addams Family/", "AddamsFamily"],
+            ["Alfred Hitchcock Presents/", "AlfredHitchcock"],
+            ["All In The Family/", "AllInTheFamily"],
+            ["America's Funniest Home Videos/", "AFV"],
+            ["Andy Griffith/", "AndyGriffith"],
+            ["Banana Splits/", "BananaSplits"],
+            ["Barney Miller/", "BarneyMiller"],
+            ["Batman/", "Batman"],
+            ["Battlestar Galactica/", "BattlestarGalactica"],
+            ["Baywatch/", "Baywatch"],
+            ["Beat the Clock/", "BeatTheClock"],
+            ["Benson/", "Benson"],
+            ["Beverly Hillbillies/", "BeverlyHillbillies"],
+            ["Bewitched/", "Bewitched"],
+            ["Big Bang Theory/", "BigBangTheory"],
+            ["Bob Newhart/", "BobNewhart"],
+            ["Bosom Buddies/", "BosomBuddies"],
+            ["Brady Bunch/", "BradyBunch"],
+            ["Card Sharks/", "CardSharks"],
+            ["Cheers/", "Cheers"],
+            ["Chico and the Man/", "ChicoAndTheMan"],
+            ["CHiPs/", "Chips"],
+            ["Christmas Shows/", "ChristmasShows"],
+            ["Columbo/", "Columbo"],
+            ["Commercials/", "Commercials"],
+            ["Computer Chronicles/", "ComputerChronicles"],
+            ["Daniel Boone/", "DanielBoone"],
+            ["Dennis the Menace/", "DennisTheMenace"],
+            ["Dick Van Dyke/", "DickVanDyke"],
+            ["Diff'rent Strokes/", "DifferentStrokes"],
+            ["Dinosaurs/", "Dinosaurs"],
+            ["Donny and Marie/", "DonnyAndMarie"],
+            ["Dukes of Hazzard/", "DukesOfHazzard"],
+            ["Everybody Loves Raymond/", "EverybodyLovesRaymond"],
+            ["Facts of Life/", "FactsOfLife"],
+            ["Family Feud/", "FamilyFeud"],
+            ["Family Matters/", "FamilyMatters"],
+            ["Family Ties/", "FamilyTies"],
+            ["Fantasy Island/", "FantasyIsland"],
+            ["Fawlty Towers/", "FawltyTowers"],
+            ["Flipper (1964)/", "Flipper"],
+            ["Flying Nun/", "FlyingNun"],
+            ["Frasier/", "Frasier"],
+            ["Fresh Prince of Bel-Air/", "FreshPrince"],
+            ["Friends/", "Friends"],
+            ["Full House/", "FullHouse"],
+            ["F Troop/", "FTroop"],
+            ["Game Shows/", "GameShows"],
+            ["Get Smart/", "GetSmart"],
+            ["Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
+            ["Gidget/", "Gidget"],
+            ["Gilligan's Island/", "GilligansIsland"],
+            ["Gomer Pyle USMC/", "GomerPyle"],
+            ["Good Times/", "GoodTimes"],
+            ["Green Acres/", "GreenAcres"],
+            ["Growing Pains/", "GrowingPains"],
+            ["Gunsmoke/", "Gunsmoke"],
+            ["Happy Days/", "HappyDays"],
+            ["Hee Haw/", "HeeHaw"],
+            ["Hill Street Blues/", "HillStreetBlues"],
+            ["Hogan's Heroes/", "HogansHeroes"],
+            ["Hollywood Squares/", "HollywoodSquares"],
+            ["Home Improvement/", "HomeImprovement"],
+            ["Honeymooners/", "Honeymooners"],
+            ["Honey West/", "HoneyWest"],
+            ["H.R. Pufnstuf/", "HRPufnstuf"],
+            ["I Dream of Jeannie/", "IDreamOfJeannie"],
+            ["King of Queens/", "KingOfQueens"],
+            ["Knight Rider/", "KnightRider"],
+            ["Kung Fu/", "KungFu"],
+            ["Land of the Giants/", "LandOfTheGiants"],
+            ["Last Man Standing (2011)/", "LastManStanding"],
+            ["Laurel & Hardy/", "LaurelAndHardy"],
+            ["Laverne & Shirley/", "LaverneAndShirley"],
+            ["Leave It To Beaver/", "LeaveItToBeaver"],
+            ["Let's Make A Deal/", "LetsMakeADeal"],
+            ["Little House on the Prairie/", "LittleHouseOnThePrairie"],
+            ["Logan's Run/", "LogansRun"],
+            ["Lost In Space/", "LostInSpace"],
+            ["Love Boat/", "LoveBoat"],
+            ["Lucy Show/", "LucyShow"],
+            ["Mary Tyler Moore/", "MaryTylerMoore"],
+            ["MASH/", "MASH"],
+            ["Match Game/", "MatchGame"],
+            ["McHale's Navy/", "McHalesNavy"],
+            ["Misc/", "MiscTV"],
+            ["Mission Impossible/", "MissionImpossible"],
+            ["Mister Ed/", "MisterEd"],
+            ["Mister Rogers/", "MisterRogers"],
+            ["Monk/", "Monk"],
+            ["Monty Python's Flying Circus/", "MontyPython"],
+            ["Mork & Mindy/", "MorkAndMindy"],
+            ["Mr Wizard/", "MrWizard"],
+            ["Munsters/", "Munsters"],
+            ["Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
+            ["My Favorite Martian/", "MyFavoriteMartian"],
+            ["My Three Sons/", "MyThreeSons"],
+            ["Newhart/", "Newhart"],
+            ["Odd Couple/", "OddCouple"],
+            ["One Day at a Time/", "OneDayAtATime"],
+            ["Partridge Family/", "PartridgeFamily"],
+            ["Password/", "Password"],
+            ["Petticoat Junction/", "PetticoatJunction"],
+            ["Phil Silvers Show/", "PhilSilvers"],
+            ["Planet of the Apes/", "PlanetOfTheApes"],
+            ["Police Squad/", "PoliceSquad"],
+            ["Quark/", "Quark"],
+            ["Rhoda/", "Rhoda"],
+            ["Rockford Files/", "RockfordFiles"],
+            ["Room 222/", "Room222"],
+            ["Smothers Brothers/", "SmothersBrothers"],
+            ["Soap/", "Soap"],
+            ["Space 1999/", "Space1999"],
+            ["Star Trek TOS/", "StarTrek"],
+            ["Survivors/", "Survivors"],
+            ["Taxi/", "Taxi"],
+            ["The Adventures of Ozzie and Harriet/", "OzzieAndHarriet"],
+            ["The Best of the Dean Martin Show/", "DeanMartin"],
+            ["The Carol Burnett Show/", "CarolBurnett"],
+            ["The Golden Girls/", "GoldenGirls"],
+            ["The Life of Riley (1953)/", "LifeOfRiley"],
+            ["The Office (US)/", "Office"],
+            ["The Paper Chase/", "PaperChase"],
+            ["The Price is Right/", "PriceIsRight"],
+            ["The Starlost (1973)/", "Starlost"],
+            ["Three's Company/", "ThreesCompany"],
+            ["Three Stooges/", "ThreeStooges"],
+            ["Time Tunnel/", "TimeTunnel"],
+            ["Tremors/", "Tremors"],
+            ["Twilight Zone/", "TwilightZone"],
+            ["UFO/", "UFO"],
+            ["Undersea World of Jacques Cousteau/", "JacquesCousteau"],
+            ["Waltons/", "Waltons"],
+            ["Welcome Back Kotter/", "WelcomeBackKotter"],
+            ["What's My Line/", "WhatsMyLine"],
+            ["Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
+            ["Wild Wild West/", "WildWildWest"],
+            ["Wings/", "Wings"],
+            ["WKRP In Cincinnati/", "WKRP"],
+            ["Wonderful World of Disney/", "WWOD"]
             )
 
 cartoonlist = (
-                ["Cartoons/Bob's Burgers/", "BobsBurgers"],
-                ["Cartoons/Bump in the Night/", "BumpInTheNight"],
-                ["Cartoons/Chip and Dale/", "ChipAndDale"],
-                ["Cartoons/Fat Albert and the Cosby Kids/", "FatAlbert"],
-                ["Cartoons/Hillbilly Bears/", "HillbillyBears"],
-                ["Cartoons/Huckleberry Hound/", "HuckleberryHound"],
-                ["Cartoons/King of the Hill/", "KingOfTheHill"],
-                ["Cartoons/Looney Tunes/", "LooneyTunes"],
-                ["Cartoons/Marvin the Martian/", "MarvinTheMartian"],
-                ["Cartoons/Misc/", "MiscCartoons"],
-                ["Cartoons/Peanuts/", "Peanuts"],
-                ["Cartoons/Peter Potamus and His Magic Flying Balloon/", "PeterPotamus"],
-                ["Cartoons/Pink Panther/", "PinkPanther"],
-                ["Cartoons/Pixie & Dixie/", "PixieAndDixie"],
-                ["Cartoons/Road Runner/", "RoadRunner"],
-                ["Cartoons/Rocky and Bullwinkle/", "RockyAndBullwinkle"],
-                ["Cartoons/Scooby Doo, Where Are You/", "ScoobyDoo"],
-                ["Cartoons/Secret Squirrel/", "SecretSquirrel"],
-                ["Cartoons/Simpsons/", "Simpsons"],
-                ["Cartoons/Snagglepuss/", "Snagglepuss"],
-                ["Cartoons/Speed Racer/", "SpeedRacer"],
-                ["Cartoons/Tennessee Tuxedo/", "TennesseeTuxedo"],
-                ["Cartoons/The Yogi Bear Show/", "YogiBear"],
-                ["Cartoons/Tom and Jerry/", "TomAndJerry"],
-                ["Cartoons/Top Cat/", "TopCat"],
-                ["Cartoons/Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
-                ["Cartoons/Underdog/", "Underdog"],
-                ["Cartoons/Unsorted/", "UnsortedCartoons"],
-                ["Cartoons/Woody Woodpecker/", "WoodyWoodpecker"],
+                ["Bob's Burgers/", "BobsBurgers"],
+                ["Bump in the Night/", "BumpInTheNight"],
+                ["Chip and Dale/", "ChipAndDale"],
+                ["Fat Albert and the Cosby Kids/", "FatAlbert"],
+                ["Hillbilly Bears/", "HillbillyBears"],
+                ["Huckleberry Hound/", "HuckleberryHound"],
+                ["King of the Hill/", "KingOfTheHill"],
+                ["Looney Tunes/", "LooneyTunes"],
+                ["Marvin the Martian/", "MarvinTheMartian"],
+                ["Misc/", "MiscCartoons"],
+                ["Peanuts/", "Peanuts"],
+                ["Peter Potamus and His Magic Flying Balloon/", "PeterPotamus"],
+                ["Pink Panther/", "PinkPanther"],
+                ["Pixie & Dixie/", "PixieAndDixie"],
+                ["Road Runner/", "RoadRunner"],
+                ["Rocky and Bullwinkle/", "RockyAndBullwinkle"],
+                ["Scooby Doo, Where Are You/", "ScoobyDoo"],
+                ["Secret Squirrel/", "SecretSquirrel"],
+                ["Simpsons/", "Simpsons"],
+                ["Snagglepuss/", "Snagglepuss"],
+                ["Speed Racer/", "SpeedRacer"],
+                ["Tennessee Tuxedo/", "TennesseeTuxedo"],
+                ["The Yogi Bear Show/", "YogiBear"],
+                ["Tom and Jerry/", "TomAndJerry"],
+                ["Top Cat/", "TopCat"],
+                ["Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
+                ["Underdog/", "Underdog"],
+                ["Unsorted/", "UnsortedCartoons"],
+                ["Woody Woodpecker/", "WoodyWoodpecker"],
                 )
 
 log = ''
@@ -349,12 +350,14 @@ def main(quiet):
     else:
         log = Log(level='INFO')
 
+    press_enter = "Press enter to continue anyway, ^C to exit\n"
+
     # first, check for any directories below the base tv directory
     # that are not represented in the list above
     # this means I added a new series on disk (or renamed one)
     # but forgot to add it to the list above
-    for name in os.listdir(os.path.join(basetv, 'Television')):
-        full = os.path.join('Television', name) + os.sep
+    for name in os.listdir(basetv):
+        full =  name + os.sep
         found = False
         for i, entry in enumerate(tvlist):
             if full in entry[0]:
@@ -365,13 +368,13 @@ def main(quiet):
                 # since the whole process can take a long time,
                 # I may want to abort and fix the list before
                 # continuing
-                input("Press enter to continue anyway, ^C to exit\n")
+                input(press_enter)
             except KeyboardInterrupt:
                 sys(exit(1))
 
     # do the same for the cartoons
-    for name in os.listdir(os.path.join(basetv, 'Cartoons')):
-        full = os.path.join('Cartoons', name) + os.sep
+    for name in os.listdir(basecartoon):
+        full =  name + os.sep
         found = False
         for i, entry in enumerate(cartoonlist):
             if full in entry[0]:
@@ -379,14 +382,35 @@ def main(quiet):
         if not found:
             log.warning("Directory {} not found in list!".format(full))
             try:
-                input("Press enter to continue anyway, ^C to exit\n")
+                input(press_enter)
             except KeyboardInterrupt:
                 sys(exit(1))
 
     # no need to check the movies since I keep them all in a single tree
 
+
+    # now, check for any list items that don't exist on disk.
+    # (inverse of above checks)
+    for dir, name in tvlist:
+        path = os.path.join(basetv, dir)
+        if not os.path.exists(path):
+            log.warning("Directory {} doesn't exist!".format(path))
+            try:
+                input(press_enter)
+            except KeyboardInterrupt:
+                sys(exit(1))
+
+    for dir, name in cartoonlist:
+        path = os.path.join(basecartoon, dir)
+        if not os.path.exists(path):
+            log.warning("Directory {} doesn't exist!".format(path))
+            try:
+                input(press_enter)
+            except KeyboardInterrupt:
+                sys(exit(1))
+
     try:
-        input("All directories accounted for.  Press enter to create lists:")
+        input("All directories and lists accounted for.  Press enter to create lists, ^C to exit:\n")
     except KeyboardInterrupt:
         sys(exit(1))
 

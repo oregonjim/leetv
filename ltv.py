@@ -25,7 +25,7 @@
 #
 #  Main "Tv" class for leetv
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-05-31
 #
 import sys
 import os
@@ -321,18 +321,16 @@ class Tv:
 
     def add_video(self, vname, vtime, logging=True, series=None):
         """ add video to master list """
+        s = "{} [{}]: {} : {:.3f} minutes".format(
+            self.running_time_ms_to_timestamp(self.running_time_ms),
+            series,
+            os.path.basename(urllib.parse.unquote(vname)),
+            self.ms_to_min(int(vtime)))
+
         if logging:
-            self.log.info("{} [{}]: {} : {:.3f} minutes".format(
-                self.running_time_ms_to_timestamp(self.running_time_ms),
-                series,
-                os.path.basename(urllib.parse.unquote(vname)),
-                self.ms_to_min(int(vtime))))
+            self.log.info(s)
         else:
-            self.log.debug("{} [{}]: {} : {:.3f} minutes".format(
-                self.running_time_ms_to_timestamp(self.running_time_ms),
-                series,
-                os.path.basename(urllib.parse.unquote(vname)),
-                self.ms_to_min(int(vtime))))
+            self.log.debug(s)
 
         self.master_name.append(vname)
         self.master_time.append(vtime)
@@ -360,12 +358,18 @@ class Tv:
 
     def do_commercial_fill(self, target_ms):
         """ add random commercials to master list, up to target_ms """
+        # I used to use a best-fit algorithm here, but it
+        # produced repeating patterns of commercials which
+        # was not the desired result.  So, now we go through the
+        # pool randomly several times, accumulating anything that will
+        # fit, until we've gotten as close as possible to the target.
+        # Any leftover time (drift) will self-correct at the next time slot.
         initial_target_ms = target_ms
         # set a realistic limit for # of retries
         limit = len(self.cn) * 10 + 1
-        # try to fill remaining time to within 10 seconds
+        # try to fill remaining time to within 5 seconds
         self.log.debug('Commercial Pool: {}'.format(len(self.cn)))
-        while limit and (target_ms > 10000):
+        while limit and (target_ms > 5000):
             if len(self.cn) < 10:
                 # we're almost out of commercials!
                 self.log.warning('Commercial pool depleted! Reloading...')
@@ -398,7 +402,7 @@ class Tv:
             self.drift_ms = target_ms
 
     def write_playlist(self, name, fmt='m3u8'):
-        " create a playlist """
+        """ create a playlist in one of several formats """
 
         self.log.info("Creating {} playlist {}".format(fmt, name))
         playlist = open(name, 'w')
@@ -598,24 +602,32 @@ class Tv:
 
     def timeslot(self):
         """ generator for main scheduling loop """
-        # what can be in a 'blank' slot
-        blank_names = ('', 'blank', 'none', 'empty')
+        # iterates through all 48 timeslots in a day
+        # returns dictionary with keys as:
+        #   label  - timeslot label (0000, 0030, 0100, etc.)
+        #   mins   - start of slot as minutes since midnight
+        #   series - name of series scheduled for this slot
+        #   seq    - type of program (linear, random, etc.)
 
         sched = ConfigParser()
         sched.read(os.path.join(self.directory, 'sched', self.get_dow(date.today()) + '.ini'))
 
         for i, x in enumerate(self.times):
-            try:
-                series = sched.get(x, 'series')
-                if series.lower() in blank_names:
-                    series = 'blank'
 
-                seq = sched.get(x, 'seq')
-                if seq.isnumeric():
-                    # sanity check: if numeric, seq should never be less than '2'
-                    if int(seq) < 2:
-                        seq = '2'
-            except:
+            series = sched.get(x, 'series', fallback = 'error')
+
+            # allow several names for a 'blank' slot
+            if series.lower() in ('', 'blank', 'none', 'empty'):
+                series = 'blank'
+
+            seq = sched.get(x, 'seq', fallback='error')
+
+            if seq.isnumeric():
+                # sanity check: if numeric, seq should never be less than '2'
+                if int(seq) < 2:
+                    seq = '2'
+
+            if series == 'error' or seq == 'error':
                 self.log.warning('Error getting schedule entry for slot {}'.format(x))
                 series = 'blank'
                 seq = 'linear'
