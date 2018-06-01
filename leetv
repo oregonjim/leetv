@@ -191,7 +191,7 @@ def update_settings(log, tv, settings, slot, fn, index):
         settings.set(slot['series'], 'skip', '0')
         if not slot['seq'] == 'linear':
             # seq is 'random': save name so we don't play it again
-            if slot['series'].tolower() == 'settings':
+            if slot['series'].lower() == 'settings':
                 log.warning("Please do not name a series {}!".format(slot['series']))
                 log.warning("Changes to {} will not be tracked".format(slot['series']))
             else:
