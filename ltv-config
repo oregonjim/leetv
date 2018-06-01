@@ -40,7 +40,6 @@
 #
 import sys
 import os
-import argparse
 import urllib.parse
 from datetime import date, datetime
 import time
@@ -55,13 +54,17 @@ from leeutils import *
 __version__ = '1.00'
 
 class FileList:
-
+    """
+    gathers all media lists together for scheduling
+    along with min/max/avg video length per series
+    """
     directory = ''
     series_list = []
 
     def __init__(self):
         self.directory = os.path.join(os.getenv('HOME'), '.leetv', 'media')
         for series_file in filewalk(self.directory):
+            # collect all the media lists
             if series_file.endswith('.lst'):
                 fn, ft = self.get_filelist(series_file)
                 min = 99999999
@@ -69,8 +72,11 @@ class FileList:
                 minname = ''
                 maxname = ''
                 total = 0
+                # for each filename in a single media list
                 for i, name in enumerate(fn):
+                    # convert ms to minutes
                     runtime = int(ft[i]) / 1000 / 60
+                    # calc min/max/avg
                     total += runtime
                     if runtime > max:
                         max = runtime
@@ -122,14 +128,15 @@ class MainWindow(QMainWindow):
         self.show()
 
 
-def main(args):
+def main():
 
+    # get all our media lists to populate the comboboxes with
     s = FileList()
+
     names = []
     for i in s.series_list:
         names.append(i[0])
         print(i)
-    sys.exit(0)
 
     x = list(range(48))
 
@@ -151,13 +158,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description="ltv-config {}: A LeeTV configuration editor (C) 2018 by Jim Lee".format(__version__))
-
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="output messages to screen AND logfile (default: logfile)")
-    parser.add_argument("-l", "--loglevel", default="INFO",
-                        help="loglevel (DEBUG|INFO|WARNING|ERROR|OFF) (default: INFO)")
-
-    cmdargs = parser.parse_args()
-    sys.exit(main(cmdargs))
+    sys.exit(main())

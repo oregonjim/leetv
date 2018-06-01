@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-05-31
 #
 import os
 import sys
@@ -93,7 +93,7 @@ def dirwalk(path):
 def call(args):
     '''
     Blocking process call.
-    Takes an list of strings like ['ls', '-l'] and returns the 3-tuple
+    Takes a list of strings like ['ls', '-l'] and returns the 3-tuple
     (stdout, stderr, returncode).
     '''
     p = subprocess.Popen(args, stderr=subprocess.PIPE,
@@ -162,8 +162,7 @@ class Log:
         self.set_level(level)
 
     def __del__(self):
-        if self.f != sys.stdout:
-            self.f.close()
+        self.close()
 
     def flush(self):
         """ flush log file """
@@ -213,10 +212,9 @@ class Log:
             return
         self._output(self.WARNING, '[WARNING]', message)
 
-    def error(self, message):
+    def error(self, message, retcode=1):
         """ error log message """
         if self.level > self.levels['ERROR']:
-            sys.exit(1)
-            return
+            sys.exit(retcode)
         self._output(self.ERROR, '[ERROR]', message)
-        sys.exit(1)
+        sys.exit(retcode)

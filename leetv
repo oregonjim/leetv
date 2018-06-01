@@ -56,7 +56,7 @@
 #  playlist format with mpv as the media player
 #
 #
-#  Last update: 2018-05-31
+#  Last update: 2018-06-01
 #
 #
 #  USAGE:
@@ -97,7 +97,7 @@ from ltv import Tv
 
 
 # program version
-__version__ = '1.13-pre1'
+__version__ = '1.13-pre2'
 
 
 def get_settings(log, tv, settings, slot, fn):
@@ -147,7 +147,12 @@ def get_settings(log, tv, settings, slot, fn):
                         tries -= 1
                     if not tries:
                         log.warning("Unable to find unplayed episode for {}".format(slot['series']))
-
+                        try:
+                            dst = os.path.join(tv.directory, 'config', slot['series'] + '.old')
+                            os.rename(rndseries_file, dst)
+                            log.warning("Series reset: moved {} to {}".format(rndseries_file, dst))
+                        except OSError:
+                            log.warning("Unable to create {}".format(dst))
     else:
         # no saved section, start a new one
         settings.add_section(slot['series'])
@@ -181,6 +186,12 @@ def get_settings(log, tv, settings, slot, fn):
                     tries -= 1
                 if not tries:
                     log.info("Unable to find unplayed episode for {}".format(slot['series']))
+                    try:
+                        dst = os.path.join(tv.directory, 'config', slot['series'] + '.old')
+                        os.rename(rndseries_file, dst)
+                        log.warning("Series reset: moved {} to {}".format(rndseries_file, dst))
+                    except OSError:
+                        log.warning("Unable to create {}".format(dst))
 
     return index
 

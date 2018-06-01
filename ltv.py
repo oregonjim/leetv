@@ -41,7 +41,7 @@ from configparser import ConfigParser
 
 class Tv:
     """ Main LeeTV class """
-    # list of 1/2 hour time slots in a day - 24hr time format
+    # tuple of 1/2 hour time slots in a day - 24hr time format
     times = ('0000', '0030', '0100', '0130', '0200', '0230',
              '0300', '0330', '0400', '0430', '0500', '0530',
              '0600', '0630', '0700', '0730', '0800', '0830',
@@ -97,7 +97,7 @@ class Tv:
         """ Tv object constructor """
         self.log = logger
 
-        # go to the main directory, check tree for validity
+        # check the config directory tree for validity
         self.directory = os.path.join(os.getenv('HOME'), '.leetv')
         self._check_prerequisites(self.directory, exclude)
 
@@ -129,7 +129,7 @@ class Tv:
         if not os.path.exists(directory):
             met = False
             self.log.warning('Master directory does not exist!: {}'.format(directory))
-            self.log.warning('Creating default directory and config files...')
+            self.log.warning('Creating master directory and config files...')
             self._create_default_tree(directory)
 
         # subdirectories
@@ -211,40 +211,22 @@ class Tv:
             self.cn, self.ct = self.get_filelist(cfile, shuffle=True)
 
         if not exclude:
-            # bumper video shown at the start of every time slot
-            sbv = os.path.join(self.directory, self.bumper_video_name)
-            self.bumper_video = urllib.parse.quote(sbv)
-            if not os.path.isfile(sbv):
-                met = False
-                self.log.warning("{} does not exist!".format(sbv))
+            # check for support videos
+            vids = (self.bumper_video_name, self.reset_video_name,
+                    self.weather_video_name, self.news_video_name,
+                    self.fill_video_name)
+            for vid in vids:
+                path = os.path.join(self.directory, vid)
+                if not os.path.isfile(path):
+                    met = False
+                    self.log.warning("{} does not exist!".format(sbv))
 
-            # bumper video shown when commercial pool is reset
-            srv = os.path.join(self.directory, self.reset_video_name)
-            self.reset_video = urllib.parse.quote(srv)
-            if not os.path.isfile(srv):
-                met = False
-                self.log.warning("{} does not exist!".format(srv))
-
-            # weather video
-            swv = os.path.join(self.directory, self.weather_video_name)
-            self.weather_video = urllib.parse.quote(swv)
-            if not os.path.isfile(swv):
-                met = False
-                self.log.warning("{} does not exist!".format(swv))
-
-            # news video
-            snv = os.path.join(self.directory, self.news_video_name)
-            self.news_video = urllib.parse.quote(snv)
-            if not os.path.isfile(snv):
-                met = False
-                self.log.warning("{} does not exist!".format(snv))
-
-            # fill video shown whenever the schedule has a blank slot
-            sfv = os.path.join(self.directory, self.fill_video_name)
-            self.fill_video = urllib.parse.quote(sfv)
-            if not os.path.isfile(sfv):
-                met = False
-                self.log.warning("{} does not exist!".format(sfv))
+            # create playlist-ready path names
+            self.bumper_video = urllib.parse.quote(os.path.join(self.directory, self.bumper_video_name))
+            self.reset_video = urllib.parse.quote(os.path.join(self.directory, self.reset_video_name))
+            self.weather_video = urllib.parse.quote(os.path.join(self.directory, self.weather_video_name))
+            self.news_video = urllib.parse.quote(os.path.join(self.directory, self.news_video_name))
+            self.fill_video = urllib.parse.quote(os.path.join(self.directory, self.fill_video_name))
 
         if not met:
             self.log.error('Please check the LeeTV documentation for proper setup.')
