@@ -56,7 +56,7 @@
 #  playlist format with mpv as the media player
 #
 #
-#  Last update: 2018-06-01
+#  Last update: 2018-06-02
 #
 #
 #  USAGE:
@@ -97,7 +97,7 @@ from ltv import Tv
 
 
 # program version
-__version__ = '1.13-pre2'
+__version__ = '1.13-pre3'
 
 
 def get_settings(log, tv, settings, slot, fn):

@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-05-31
+#  Last update: 2018-06-02
 #
 import os
 import sys
@@ -100,6 +100,24 @@ def call(args):
                          stdout=subprocess.PIPE, close_fds=True, shell=False)
     o, e = p.communicate()
     return o.decode('utf-8'), e.decode('utf-8'), p.returncode
+
+
+def rename_ini_section(cp, section_from, section_to):
+    '''
+    Rename a configparser .ini file section
+    '''
+    if section_from == section_to:
+        # avoid duplicate section exception
+        return
+
+    items = cp.items(section_from)
+
+    cp.add_section(section_to)
+
+    for item in items:
+        cp.set(section_to, item[0], item[1])
+
+    cp.remove_section(section_from)
 
 
 class Container:

@@ -23,9 +23,9 @@ I don't even have to stop or restart anything.  It works so well that I added
 a wireless HDMI transmitter so that the signal is available on any TV in the house!
 - - -
 
-LeeTV works with any operating system that supports Python 3.x and VLC or mpv.
+LeeTV works with any operating system that supports Python 3 and mpv (or VLC).
 
-  LeeTV and its utilities are written in Python 3.x.  I have tested it heavily
+  LeeTV and its utilities are written in Python 3.  I have tested it heavily
 under Linux, almost as heavily under MacOS X, and lightly under Windows.  While
 Windows 'works', it's not really suitable for use with anything labeled '24/7'.
 - - -
@@ -78,9 +78,13 @@ Other distributions (e.g. Debian, Ubuntu) may have slightly
 different package names.  Substitute ```apt-get``` for ```dnf```.
 You typically need to prefix all commands with ```sudo```.
 
+Under MacOS X, the *macports* or *homebrew* package managers can be used.
+
+Under Windows, installation is left as an exercise for the <del>masochist</del> reader.
+
 #### Manditory:
 
-Python 3.x (likely already present)
+Python 3 (likely already present)
 
 mpv or VLC:
 ```dnf install mpv```
@@ -96,9 +100,9 @@ If you want to see memory usage: ```dnf install python3-psutil```
 
 If you want to normalize audio on a bunch of videos (e.g. commercials): ```pip3 install ffmpeg-normalize```
 
-Fonts used by various utilities: ```dnf install bitstream-vera*```
+Fonts used by various utilities: ```dnf install bitstream-vera*``` (or use included ```VeraBd.ttf```)
 
-For creating your pool of commercials from sources like YouTube: ```dnf install youtube-dl```
+For creating your local pool of commercials from sources like YouTube: ```dnf install youtube-dl```
 
 ##### For ltv-createbumper:
 
@@ -110,6 +114,12 @@ Compositing videos: ```pip3 install moviepy```
 ##### For ltv-print:
 
 To print out your schedule like a TV guide: ```pip3 install beautifultable```
+
+If you have a recent HP printer with broken font handling (i.e. the 'ff' problem),
+consider piping the output through enscript: ```dnf install enscript```
+
+Example:
+``` ltv-print | enscript -f Courier10 -B -c -h -q -p - | lpr```
 
 ##### For ltv-getnewsweather:
 
