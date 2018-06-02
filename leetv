@@ -131,7 +131,7 @@ def get_settings(log, tv, settings, slot, fn):
                 rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
                 rndseries.read(rndseries_file)
                 name = os.path.splitext(
-                    os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                    os.path.basename(fn[index]))[0]
                 if rndseries.has_section(name):
                     # already played this one
                     # keep selecting random episodes until
@@ -140,7 +140,7 @@ def get_settings(log, tv, settings, slot, fn):
                     while tries:
                         index = random.randrange(0, len(fn))
                         name = os.path.splitext(
-                            os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                            os.path.basename(fn[index]))[0]
                         if not rndseries.has_section(name):
                             # we found an unplayed episode
                             break
@@ -173,13 +173,13 @@ def get_settings(log, tv, settings, slot, fn):
             rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
             rndseries.read(rndseries_file)
             name = os.path.splitext(
-                os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                os.path.basename(fn[index]))[0]
             if rndseries.has_section(name):
                 tries = len(fn) * 10 + 1
                 while tries:
                     index = random.randrange(0, len(fn))
                     name = os.path.splitext(
-                        os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                        os.path.basename(fn[index]))[0]
                     if not rndseries.has_section(name):
                         # we found an unplayed episode
                         break
@@ -213,7 +213,7 @@ def update_settings(log, tv, settings, slot, fn, index):
                 rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
                 rndseries.read(rndseries_file)
                 name = os.path.splitext(
-                    os.path.basename(urllib.parse.unquote(fn[index])))[0]
+                    os.path.basename(fn[index]))[0]
                 if not rndseries.has_section(name):
                     log.debug("Marking played episode: {}".format(name))
                     rndseries.add_section(name)
