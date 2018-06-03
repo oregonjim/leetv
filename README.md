@@ -279,9 +279,9 @@ never specify this file explicitly in the schedule, leetv will draw upon this li
 to fill empty time between scheduled programs.
 - - -
 
-  Next, edit the .ini files in ```~/.leetv/sched/``` to reflect your desired schedule.  I
-am working on a graphical configuration editor, but it's not finished yet.  Besides,
-the schedule format is simple and easily edited with any standard text editor.
+  Next,  use the graphical schedule editor ```ltv-config``` to set up your daily schedules. You can simply edit the ini files
+in ```~/.leetv/sched/``` with your favorite text editor if you prefer, but ```ltv-config``` gives
+you a nice picklist interface and guarantees the ini files to have correct formatting.
 Each time slot is named ```[xxxx]```, where 'xxxx' is the start time of that slot in 24 hour
 (military) format.  So slot ```[0000]``` is midnight, ```[2000]``` is 8pm, etc.  Inside each slot
 are two fields: ```series``` and ```seq```.  Series is the name of one of your media lists created
@@ -386,5 +386,5 @@ for more verbose diagnostics.
 at midnight, and ```ltv-getnewsweather``` to run twice an hour (once to get the
 news and once to get the weather).  See the comments at the top of ```leetv```
 for more details.  Enjoy your TV station!  In the meantime, I'll keep
-working on the documentation and the graphical configuration editor...
+working on the documentation...
 
