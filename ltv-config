@@ -30,14 +30,9 @@
 #  (alternatively, a simple text editor can be used
 #  on ~/.leetv/sched/*.ini and ~/.leetv/config/settings.ini)
 #
+#  Last update: 2018-06-03
 #
-#  NOTE NOTE NOTE *************************************
-#                 This is mainly just a 'stub' for now.
-#                 Nothing to see yet, move along...
-#                 *************************************
-#
-#  Last update: 2018-05-28
-#
+
 import sys
 import os
 import urllib.parse
@@ -45,8 +40,9 @@ from datetime import date, datetime
 import time
 from configparser import ConfigParser
 
-from PySide.QtCore import *
-from PySide.QtGui import *
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
 
 from leeutils import *
 
@@ -88,7 +84,8 @@ class FileList:
                 minname = urllib.parse.unquote(os.path.basename(minname))
                 maxname = urllib.parse.unquote(os.path.basename(maxname))
                 self.series_list.append([s.replace('.lst',''), round(total / len(fn), 2), round(min, 2), minname, round(max, 2), maxname])
-        self.series_list.sort(key=self.num_sort)
+        self.series_list.sort()
+        self.series_list.append(['blank', 0, 0, '', 0, ''])
 
     def get_filelist(self, filename, shuffle=False):
         f = list()
@@ -108,54 +105,184 @@ class FileList:
                 t.append(b.strip())
             return (f, t)
 
-    def num_sort(self, x):
-        return float(x[2])
 
+class MyCombobox(ttk.Combobox):
+    '''
+    Subclass of ttk.Combobox
+    Sets popdown list text color
+    '''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bind('<Map>', self._change_popdown_color)
 
-class MainWindow(QMainWindow):
-    # Constructor function
-    def __init__(self):
-        super(MainWindow,self).__init__()
-        self.initGUI()
-
-    def initGUI(self):
-        self.setWindowTitle("LeeTV Config Editor")
-        self.setGeometry(300, 250, 400, 300)
-        self.setMinimumHeight(100)
-        self.setMinimumWidth(250)
-        self.setMaximumHeight(200)
-        self.setMaximumWidth(800)
-        self.show()
+    def _change_popdown_color(self, *args):
+        popdown = self.tk.eval('ttk::combobox::PopdownWindow {}'.format(self))
+        self.tk.call('{}.f.l'.format(popdown), 'configure', '-foreground', 'black')
 
 
 def main():
 
+    days=('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')
+
+    # tuple of 1/2 hour time slots in a day - 24hr time format
+    times = ('0000', '0030', '0100', '0130', '0200', '0230',
+             '0300', '0330', '0400', '0430', '0500', '0530',
+             '0600', '0630', '0700', '0730', '0800', '0830',
+             '0900', '0930', '1000', '1030', '1100', '1130',
+             '1200', '1230', '1300', '1330', '1400', '1430',
+             '1500', '1530', '1600', '1630', '1700', '1730',
+             '1800', '1830', '1900', '1930', '2000', '2030',
+             '2100', '2130', '2200', '2230', '2300', '2330')
+
+
+    def get_schedule(day):
+        ''' read schedule for day into comboboxes '''
+        sched_file = os.path.join(os.getenv('HOME'), '.leetv', 'sched', day + '.ini')
+        sched = ConfigParser()
+        sched.read(sched_file)
+
+        for i, slot in enumerate(times):
+            combo[i].set(sched.get(slot, 'series', fallback = 'error'))
+            seq[i].set(sched.get(slot, 'seq', fallback = 'error'))
+
+    def set_schedule(day):
+        ''' save schedule in comboboxes to ini file '''
+        sched_file = os.path.join(os.getenv('HOME'), '.leetv', 'sched', day + '.ini')
+        # sched_file =  day + '.test'
+        sched = ConfigParser()
+
+        for i, slot in enumerate(times):
+            sched.add_section(slot)
+            sched.set(slot, 'series',combo[i].get())
+            sched.set(slot, 'seq',seq[i].get())
+            with open(sched_file, 'w') as fp:
+                sched.write(fp)
+
+    def get_sc():
+        ''' called when radiobutton selected '''
+        get_schedule(days[v.get()])
+
+    def set_sc():
+        ''' called when save button clicked '''
+        # which radiobutton is selected?
+        day = days[v.get()]
+
+        if messagebox.askokcancel('Save Schedule', 'Overwrite {}.ini?'.format(day)):
+            set_schedule(day)
+
+    def clear_combos():
+        ''' called when clear button clicked '''
+        # set all series boxes to last item ('blank')
+        # set all seq boxes to 'linear'
+        for idx in range(48):
+            combo[idx].set(names[-1])
+            seq[idx].set(seqs[0])
+
     # get all our media lists to populate the comboboxes with
     s = FileList()
 
+    # picklist for series comboboxes
     names = []
     for i in s.series_list:
         names.append(i[0])
-        print(i)
 
-    x = list(range(48))
+    # picklist for sequence comboboxes
+    seqs = ['linear', 'random']
+    for i in range(2, 48):
+        seqs.append(str(i))
 
-    for i in x:
-        x[i] = names[i]
+    root = tk.Tk()
+    root.title('LeeTV Configuration Editor')
+    # style = ttk.Style()
+    # print(style.theme_names())
+    # style.theme_use('alt')
+    topframe = ttk.Frame(root, padding='3 3 12 12')
+    topframe.grid(column=0, row=0, sticky='NSEW')
+    comboframe = ttk.Frame(root, padding='3 3 12 12')
+    comboframe.grid(column=0, row=1, sticky='NSEW')
 
-    myApp = QApplication(sys.argv)
+    combo = list()
+    seq = list()
+    combo_label = list()
+    combo_var = list()
+    seq_var = list()
 
-    mainWindow = MainWindow()
+    # day of the week radiobuttons
+    v = tk.IntVar()
+    b1 = ttk.Radiobutton(topframe, text='Mon', variable=v, value=0, command=get_sc)
+    b1.grid(column=0, row=0, padx=10, sticky='NSEW')
+    b2 = ttk.Radiobutton(topframe, text='Tue', variable=v, value=1, command=get_sc)
+    b2.grid(column=1, row=0, padx=10, sticky='NSEW')
+    b3 = ttk.Radiobutton(topframe, text='Wed', variable=v, value=2, command=get_sc)
+    b3.grid(column=2, row=0, padx=10, sticky='NSEW')
+    b4 = ttk.Radiobutton(topframe, text='Thu', variable=v, value=3, command=get_sc)
+    b4.grid(column=3, row=0, padx=10, sticky='NSEW')
+    b5 = ttk.Radiobutton(topframe, text='Fri', variable=v, value=4, command=get_sc)
+    b5.grid(column=4, row=0, padx=10, sticky='NSEW')
+    b6 = ttk.Radiobutton(topframe, text='Sat', variable=v, value=5, command=get_sc)
+    b6.grid(column=5, row=0, padx=10, sticky='NSEW')
+    b6 = ttk.Radiobutton(topframe, text='Sun', variable=v, value=6, command=get_sc)
+    b6.grid(column=6, row=0, padx=10, sticky='NSEW')
 
-    #appLabel = QLabel()
-    #appLabel.setText("PySide Application")
-    #appLabel.setAlignment(Qt.AlignCenter)
-    #appLabel.setWindowTitle("LeeTV Configuration Editor")
-    #appLabel.setGeometry(300, 300, 250, 175)
-    #appLabel.show()
+    # clear and save buttons
+    b7 = ttk.Button(topframe, text='Clear', command=clear_combos)
+    b7.grid(column=9, row=0, padx=40, sticky='W')
+    b8 = ttk.Button(topframe, text='Save', command=set_sc)
+    b8.grid(column=10, row=0, padx=40, sticky='E')
 
-    myApp.exec_()
+    for i in range(48):
+        combo_var.append('')
+        seq_var.append('')
 
+    # create grid of 96 time slot combo boxes with labels
+    # 48 time slot labels
+    # 48 series boxes
+    # 48 sequence boxes
+
+    # time slot labels
+    for col in range(6):
+        for row in range(8):
+            idx = col * 8 + row
+            # convert 24hr to am/pm
+            if idx > 23:
+                if idx > 25:
+                    hr = times[idx - 24][0:2]
+                else:
+                    hr = times[idx][0:2]
+                mn = times[idx][2:] + 'pm'
+            else:
+                hr = times[idx][0:2]
+                mn = times[idx][2:] + 'am'
+            txt = '[{}]   {}:{}'.format(times[idx], hr, mn)
+            combo_label.append(ttk.Label(comboframe, text=txt, anchor='center'))
+            combo_label[idx].grid(row=row*3, column=col*2, sticky='NSEW')
+
+    # series boxes
+    for col in range(6):
+        for row in range(8):
+            idx = col * 8 + row
+            # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
+            combo.append(MyCombobox(comboframe, state='readonly', textvariable=combo_var[idx]))
+            combo[idx].grid(row=row*3+1, column=col*2, sticky='NSEW')
+            combo[idx]['values'] = names
+            # combo[idx].set(names[idx])
+
+    # sequence boxes
+    for col in range(6):
+        for row in range(8):
+            idx = col * 8 + row
+            # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
+            seq.append(MyCombobox(comboframe, state='readonly', textvariable=seq_var[idx]))
+            seq[idx].grid(row=row*3+2, column=col*2, sticky='NSEW')
+            seq[idx]['values'] = seqs
+            # combo[idx].set(names[idx])
+
+    # default to Monday schedule
+    get_schedule('mon')
+
+    root.mainloop()
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
