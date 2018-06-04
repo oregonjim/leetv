@@ -195,18 +195,18 @@ resorting to commercials.
 media list files, bumper videos, news & weather videos, and to analyze
 various aspects of the system.  Some of them are:
 
-```leetv``` - The main program
-```ltv-listmedia``` - Creates individual media list file for a series
-```ltv-listallmedia``` - Batch version of ```ltv-listmedia```
-```ltv-config``` - Graphical config/schedule editor
-```ltv-getnewsweather``` - Autogenerate news/weather videos
-```ltv-createbumper``` - Creates bumper/fill videos with moving text
-```ltv-print``` - Display or print your 'TV guide'
-```ltv-times``` - Get an overview of the min/max/avg video durations in a series
-```ltv-alltimes``` - Same as ```ltv-times``` but for your entire collection
-```ltv-index``` - Show the indices of videos in a media list (as used in settings.ini)
-```ltv-dupes``` - Detect duplicate videos in a series
-```ltv-log``` - Show today's log from the local machine or remote leetv box
+```leetv``` - The main program<BR>
+```ltv-listmedia``` - Creates individual media list file for a series<BR>
+```ltv-listallmedia``` - Batch version of ```ltv-listmedia```<BR>
+```ltv-config``` - Graphical config/schedule editor<BR>
+```ltv-getnewsweather``` - Autogenerate news/weather videos<BR>
+```ltv-createbumper``` - Creates bumper/fill videos with moving text<BR>
+```ltv-print``` - Display or print your 'TV guide'<BR>
+```ltv-times``` - Get an overview of the min/max/avg video durations in a series<BR>
+```ltv-alltimes``` - Same as ```ltv-times``` but for your entire collection<BR>
+```ltv-index``` - Show the indices of videos in a media list (as used in settings.ini)<BR>
+```ltv-dupes``` - Detect duplicate videos in a series<BR>
+```ltv-log``` - Show today's log from the local machine or remote leetv box<BR>
 
 ## Quickstart :
 
