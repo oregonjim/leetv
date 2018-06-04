@@ -66,9 +66,16 @@
 #  "ltv-getnewsweather -n" at quarter till every hour
 #  "ltv-getnewsweather -w" at quarter past every hour
 #
+# crontab example:
+# --------------------------------------------------------
+# 15   *    *    *    *    /path/to/ltv-getnewsweather -w
+# 45   *    *    *    *    /path/to/ltv-getnewsweather -n
+# --------------------------------------------------------
+
 #  (that gives us plenty of time to connect/download/render
 #  before the video comes up in the playlist rotation
-#  at the top/bottom of the hour)
+#  at the top/bottom of the hour, while still showing
+#  relatively current data)
 #
 #  It can also be run on demand at any time
 #
@@ -78,7 +85,7 @@
 #  production code.
 #
 #
-#  Last update: 2018-05-30
+#  Last update: 2018-06-03
 #
 import sys
 import os
@@ -86,7 +93,7 @@ import argparse
 import requests
 import subprocess
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from PIL import Image, ImageDraw, ImageFont
 from bs4 import BeautifulSoup
@@ -127,6 +134,13 @@ def main(weather, news, verbose):
             # save as a jpg file
             with open('weather.jpg', 'wb') as pic:
                 pic.write(res.content)
+            log.info('Converting to png...')
+            # convert jpg to png
+            res = subprocess.Popen(' '.join(['convert',
+                                             'weather.jpg',
+                                             'weather.png',
+                                             ]), shell=True)
+            res.wait()
         # this section will parse the json data from Weather Underground.
         # requires your own API key (stored in 'key.txt').
         else:
@@ -138,22 +152,28 @@ def main(weather, news, verbose):
             res = requests.get(url)
             res.raise_for_status()
             j = ''
-            # save
+            # save json in case we want to look at it later
             with open(filename, 'wb') as fp:
                 fp.write(res.content)
             with open(filename, 'rb') as fp:
                 for line in fp.readlines():
                     j += line.decode('utf-8')
             output = json.loads(j)
-            today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
+            # put datestamp on video 15 minutes into the future, since that's when it will be played
+            # (assumes cron job @ xx:15)
+            today = date.strftime(datetime.now() + timedelta(minutes=15), '%a %b %d, %Y %I:%M%p')
+            # background image to render text on top of
             base = Image.open('weatherbase.jpg').convert('RGBA')
+            # create a canvas to draw text on
             txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
             fnt = ImageFont.truetype('VeraBd.ttf', 80)
             fnt2 = ImageFont.truetype('VeraBd.ttf', 30)
             d = ImageDraw.Draw(txt)
+            # draw header and footer on canvas
             d.text((int(base.size[0] * .05), 60), "LeeTV Weather", font=fnt, align='center', fill=(64, 0, 64, 220))
             d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 0, 64, 220))
             d.text((int(base.size[0] * .15), int(base.size[1] * .85)), today, font=fnt, align='center', fill=(64, 0, 64, 220))
+            # draw 7-day forecast data in the middle
             x = (base.size[0]-80) // 7
             y = int(base.size[1] * .4)
             for i in range(0, 7):
@@ -168,18 +188,19 @@ def main(weather, news, verbose):
                 d.text((x * i + 40, y + 160), low, font=fnt, fill=(64, 64, 128, 220))
                 d.text((x * i + 40, y + 280), cond, font=fnt2, fill=(0, 0, 0, 220))
                 d.text((x * i + 40, y + 360), str(hum) + '%', font=fnt2, fill=(0, 80, 0, 220))
+            # draw today's summary above the 7-day forecast
             for i in range(0, 2):
                 desc = output['forecast']['txt_forecast']['forecastday'][i]['fcttext']
                 titl = output['forecast']['txt_forecast']['forecastday'][i]['title']
                 d.text((x + 40, y - 220 + (i * 80)), titl, font=fnt2, fill=(0, 0, 0, 220))
                 d.text((x + 320, y - 220 + (i * 80)), desc, font=fnt2, fill=(0, 0, 0, 220))
-
+            # combine the layers into a composite image
             out = Image.alpha_composite(base, txt)
             # out.show()
             out.save('weather.png')
 
         log.info('Converting image...')
-        # convert jpg to have even height/width
+        # convert image to ensure even height/width
         res = subprocess.Popen(' '.join(['convert',
                                          'weather.png',
                                          '-resize 1280x800!',
@@ -233,47 +254,53 @@ def main(weather, news, verbose):
         # source in html and figure out how to parse it.  Can
         # break if the publisher changes their format.
         else:
-                res = requests.get('https://www.foxnews.com/')
-                articles = []
-                if (res.status_code == 200):
-                    soup = BeautifulSoup(res.content, 'html.parser')
-                    # articles are inside <H2> tags with 'title' class
-                    l = soup.find_all('h2', class_='title')
-                    for article in l:
-                        # reduce to just the <a> tags
-                        x = article.find('a')
-                        # grab the titles of all non-video articles
-                        if str(x).find('video') == -1:
-                            articles.append(article.get_text())
+            url = 'https://www.foxnews.com/'
+            log.info('Downloading page {}...'.format(url))
+            res = requests.get(url)
+            res.raise_for_status()
+            articles = []
+            if (res.status_code == 200):
+                soup = BeautifulSoup(res.content, 'html.parser')
+                # articles are inside <H2> tags with 'title' class
+                l = soup.find_all('h2', class_='title')
+                for article in l:
+                    # reduce to just the <a> tags
+                    x = article.find('a')
+                    # grab the titles of all non-video articles
+                    if str(x).find('video') == -1:
+                        articles.append(article.get_text())
 
-                today = date.strftime(datetime.now(), '%a %b %d, %Y %I:%M%p')
-                base = Image.open('newsbase.jpg').convert('RGBA')
-                txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
-                fnt = ImageFont.truetype('VeraBd.ttf', 80)
-                fnt2 = ImageFont.truetype('VeraBd.ttf', 40)
-                d = ImageDraw.Draw(txt)
-
-                d.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
-                d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255,  220))
-                d.text((int(base.size[0] * .15), int(base.size[1] * .85)),
-                       today, font=fnt, align='center', fill=(64, 255, 255, 220))
-
-                x = int(base.size[0] * .1)
-                y = (base.size[1] - 320) // 10
-
-                # only pull the top 5 news headlines from our list
-                # should check here that we have at least five,
-                # but there always seems to be a few dozen (at least)
-                # by the time I make the code bulletproof, Fox will
-                # have changed their format anyway...
-                for i in range(0, 5):
-                    d.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
-
-                out = Image.alpha_composite(base, txt)
-                out.save('news.png')
+            # put datestamp on video 15 minutes into the future, since that's when it will be played
+            # (assumes cron job @ xx:45)
+            today = date.strftime(datetime.now() + timedelta(minutes=15), '%a %b %d, %Y %I:%M%p')
+            # background image to render on top of
+            base = Image.open('newsbase.jpg').convert('RGBA')
+            # text layer to write on
+            txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
+            fnt = ImageFont.truetype('VeraBd.ttf', 80)
+            fnt2 = ImageFont.truetype('VeraBd.ttf', 40)
+            d = ImageDraw.Draw(txt)
+            # draw header and footer on the canvas
+            d.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
+            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255,  220))
+            d.text((int(base.size[0] * .15), int(base.size[1] * .85)),
+                   today, font=fnt, align='center', fill=(64, 255, 255, 220))
+            # now draw a few headlines in the middle of the canvas
+            x = int(base.size[0] * .1)
+            y = (base.size[1] - 320) // 10
+            # only pull the top 5 news headlines from our list
+            # should check here that we have at least five,
+            # but there always seems to be a few dozen (at least)
+            # by the time I make the code bulletproof, Fox will
+            # have changed their format anyway...
+            for i in range(0, 5):
+                d.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
+            # combine the layers into a composite image
+            out = Image.alpha_composite(base, txt)
+            out.save('news.png')
 
         log.info('Converting image...')
-        # convert jpg to have even height/width
+        # convert image to ensure even height/width
         res = subprocess.Popen(' '.join(['convert',
                                          'news.png',
                                          '-resize 1920x1080!',

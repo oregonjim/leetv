@@ -193,11 +193,20 @@ resorting to commercials.
 
   A number of utility programs are included to create the required
 media list files, bumper videos, news & weather videos, and to analyze
-various aspects of the system.  Note that, while the 24-hour playlist
-is created with millisecond precision, network hiccups on remote filesystems
-and hard drive access delays can cause a bit of drift.  I have noticed
-up to a minute or two of total drift over a 24 hour period,
+various aspects of the system.  Some of them are:
 
+```leetv``` - The main program
+```ltv-listmedia``` - Creates individual media list file for a series
+```ltv-listallmedia``` - Batch version of ```ltv-listmedia```
+```ltv-config``` - Graphical config/schedule editor
+```ltv-getnewsweather``` - Autogenerate news/weather videos
+```ltv-createbumper``` - Creates bumper/fill videos with moving text
+```ltv-print``` - Display or print your 'TV guide'
+```ltv-times``` - Get an overview of the min/max/avg video durations in a series
+```ltv-alltimes``` - Same as ```ltv-times``` but for your entire collection
+```ltv-index``` - Show the indices of videos in a media list (as used in settings.ini)
+```ltv-dupes``` - Detect duplicate videos in a series
+```ltv-log``` - Show today's log from the local machine or remote leetv box
 
 ## Quickstart :
 
