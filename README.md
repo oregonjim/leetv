@@ -347,8 +347,8 @@ see the comments in the file itself for details).
 
   The defaults are:
    bumper.mp4           = 5 seconds
-   news.mp4/weather.mp4 = 15 seconds
-   fill.mp4             = 1780 seconds (1/2 hr - 20 seconds)
+   news.mp4/weather.mp4 = 25 seconds
+   fill.mp4             = 1770 seconds (1/2 hr - 30 seconds)
 ```
   This ensures that 'blank' (unprogrammed) slots are filled exactly and don't
 waste a bunch of commercials to fill unused time.  You can change the individual times
