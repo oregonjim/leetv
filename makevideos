@@ -36,5 +36,5 @@
 #
 # make the raw 5-second bumper video (with audio) - to be post-processed by ltv-createbumper
 ffmpeg -loop 1 -i bumper.png -i bumper.m4a -c:v libx264 -t 5 -pix_fmt yuv420p bumper.mp4
-# make the 1/2 hour fill video (minus 20 seconds to make room for news/weather) (with audio)
-ffmpeg -loop 1 -i fill.png -i fill.mp3 -c:v libx264 -t 1780 -pix_fmt yuv420p fill.mp4
+# make the 1/2 hour fill video (minus 30 seconds to make room for news/weather) (with audio)
+ffmpeg -loop 1 -i fill.png -i fill.mp3 -c:v libx264 -t 1770 -pix_fmt yuv420p fill.mp4
