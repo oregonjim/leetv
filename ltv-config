@@ -196,10 +196,21 @@ def main():
     # style = ttk.Style()
     # print(style.theme_names())
     # style.theme_use('alt')
-    topframe = ttk.Frame(root, padding='3 3 12 12')
-    topframe.grid(column=0, row=0, sticky='NSEW')
-    comboframe = ttk.Frame(root, padding='3 3 12 12')
-    comboframe.grid(column=0, row=1, sticky='NSEW')
+
+    buttonframe = ttk.Frame(root, padding='5 5 5 5')
+    buttonframe.grid(column=0, row=0, sticky='NSEW')
+
+    dayframe = ttk.LabelFrame(root, text='Select a Day', padding='5 5 5 5')
+    dayframe.grid(column=0, row=1, sticky='NSEW')
+
+    comboframe = ttk.Frame(root, padding='5 5 5 5')
+    comboframe.grid(column=0, row=2, sticky='NSEW')
+
+    top = dayframe.winfo_toplevel()
+    top.rowconfigure(0, weight=1)
+    top.rowconfigure(1, weight=1)
+    top.rowconfigure(2, weight=1)
+    top.columnconfigure(0, weight=1)
 
     combo = list()
     seq = list()
@@ -209,26 +220,61 @@ def main():
 
     # day of the week radiobuttons
     v = tk.IntVar()
-    b1 = ttk.Radiobutton(topframe, text='Mon', variable=v, value=0, command=get_sc)
-    b1.grid(column=0, row=0, padx=10, sticky='NSEW')
-    b2 = ttk.Radiobutton(topframe, text='Tue', variable=v, value=1, command=get_sc)
-    b2.grid(column=1, row=0, padx=10, sticky='NSEW')
-    b3 = ttk.Radiobutton(topframe, text='Wed', variable=v, value=2, command=get_sc)
-    b3.grid(column=2, row=0, padx=10, sticky='NSEW')
-    b4 = ttk.Radiobutton(topframe, text='Thu', variable=v, value=3, command=get_sc)
-    b4.grid(column=3, row=0, padx=10, sticky='NSEW')
-    b5 = ttk.Radiobutton(topframe, text='Fri', variable=v, value=4, command=get_sc)
-    b5.grid(column=4, row=0, padx=10, sticky='NSEW')
-    b6 = ttk.Radiobutton(topframe, text='Sat', variable=v, value=5, command=get_sc)
-    b6.grid(column=5, row=0, padx=10, sticky='NSEW')
-    b6 = ttk.Radiobutton(topframe, text='Sun', variable=v, value=6, command=get_sc)
-    b6.grid(column=6, row=0, padx=10, sticky='NSEW')
+    b1 = ttk.Radiobutton(dayframe, text='Mon', variable=v, value=0, command=get_sc)
+    b1.grid(column=0, row=0, padx=8, sticky='NSEW')
+    b1.rowconfigure(0, weight=1)
+    b1.columnconfigure(0, weight=1)
+    dayframe.rowconfigure(0, weight=1)
+    dayframe.columnconfigure(0, weight=1)
+
+    b2 = ttk.Radiobutton(dayframe, text='Tue', variable=v, value=1, command=get_sc)
+    b2.grid(column=1, row=0, padx=8, sticky='NSEW')
+    b2.rowconfigure(0, weight=1)
+    b2.columnconfigure(1, weight=1)
+    dayframe.columnconfigure(1, weight=1)
+
+    b3 = ttk.Radiobutton(dayframe, text='Wed', variable=v, value=2, command=get_sc)
+    b3.grid(column=2, row=0, padx=8, sticky='NSEW')
+    b3.rowconfigure(0, weight=1)
+    b3.columnconfigure(2, weight=1)
+    dayframe.columnconfigure(2, weight=1)
+
+    b4 = ttk.Radiobutton(dayframe, text='Thu', variable=v, value=3, command=get_sc)
+    b4.grid(column=3, row=0, padx=8, sticky='NSEW')
+    b4.rowconfigure(0, weight=1)
+    b4.columnconfigure(3, weight=1)
+    dayframe.columnconfigure(3, weight=1)
+
+    b5 = ttk.Radiobutton(dayframe, text='Fri', variable=v, value=4, command=get_sc)
+    b5.grid(column=4, row=0, padx=8, sticky='NSEW')
+    b5.rowconfigure(0, weight=1)
+    b5.columnconfigure(4, weight=1)
+    dayframe.columnconfigure(4, weight=1)
+
+    b6 = ttk.Radiobutton(dayframe, text='Sat', variable=v, value=5, command=get_sc)
+    b6.grid(column=5, row=0, padx=8, sticky='NSEW')
+    b6.rowconfigure(0, weight=1)
+    b6.columnconfigure(5, weight=1)
+    dayframe.columnconfigure(5, weight=1)
+
+    b7 = ttk.Radiobutton(dayframe, text='Sun', variable=v, value=6, command=get_sc)
+    b7.grid(column=6, row=0, padx=8, sticky='NSEW')
+    b7.rowconfigure(0, weight=1)
+    b7.columnconfigure(6, weight=1)
+    dayframe.columnconfigure(6, weight=1)
 
     # clear and save buttons
-    b7 = ttk.Button(topframe, text='Clear', command=clear_combos)
-    b7.grid(column=9, row=0, padx=40, sticky='W')
-    b8 = ttk.Button(topframe, text='Save', command=set_sc)
-    b8.grid(column=10, row=0, padx=40, sticky='E')
+    b8 = ttk.Button(buttonframe, text='Clear', command=clear_combos)
+    b8.grid(column=0, row=0, padx=8, sticky='NSEW')
+    b8.rowconfigure(0, weight=1)
+    b8.columnconfigure(0, weight=1)
+    buttonframe.columnconfigure(0, weight=1)
+
+    b9 = ttk.Button(buttonframe, text='Save', command=set_sc)
+    b9.grid(column=1, row=0, padx=8, sticky='NSEW')
+    b9.rowconfigure(0, weight=1)
+    b9.columnconfigure(1, weight=1)
+    buttonframe.columnconfigure(1, weight=1)
 
     for i in range(48):
         combo_var.append('')
@@ -254,8 +300,12 @@ def main():
                 hr = times[idx][0:2]
                 mn = times[idx][2:] + 'am'
             txt = '[{}]   {}:{}'.format(times[idx], hr, mn)
-            combo_label.append(ttk.Label(comboframe, text=txt, anchor='center'))
-            combo_label[idx].grid(row=row*3, column=col*2, sticky='NSEW')
+            combo_label.append(ttk.Label(comboframe, text=txt, anchor='w', foreground='green'))
+            combo_label[idx].grid(row=row*3, column=col, pady=2, sticky='NSEW')
+            combo_label[idx].rowconfigure(row*3, weight=1)
+            combo_label[idx].columnconfigure(col, weight=1)
+            comboframe.rowconfigure(row*3, weight=1)
+            comboframe.columnconfigure(col, weight=1)
 
     # series boxes
     for col in range(6):
@@ -263,9 +313,12 @@ def main():
             idx = col * 8 + row
             # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
             combo.append(MyCombobox(comboframe, state='readonly', textvariable=combo_var[idx]))
-            combo[idx].grid(row=row*3+1, column=col*2, sticky='NSEW')
+            combo[idx].grid(row=row*3+1, column=col, padx=8, pady=2, sticky='NSEW')
+            combo[idx].rowconfigure(row*3+1, weight=1)
+            combo[idx].columnconfigure(col, weight=1)
+            comboframe.rowconfigure(row*3+1, weight=1)
+            comboframe.columnconfigure(col, weight=1)
             combo[idx]['values'] = names
-            # combo[idx].set(names[idx])
 
     # sequence boxes
     for col in range(6):
@@ -273,9 +326,12 @@ def main():
             idx = col * 8 + row
             # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
             seq.append(MyCombobox(comboframe, state='readonly', textvariable=seq_var[idx]))
-            seq[idx].grid(row=row*3+2, column=col*2, sticky='NSEW')
+            seq[idx].grid(row=row*3+2, column=col, padx=8, pady=2, sticky='NSEW')
+            seq[idx].rowconfigure(row*3+2, weight=1)
+            seq[idx].columnconfigure(col, weight=1)
+            comboframe.rowconfigure(row*3+2, weight=1)
+            comboframe.columnconfigure(col, weight=1)
             seq[idx]['values'] = seqs
-            # combo[idx].set(names[idx])
 
     # default to Monday schedule
     get_schedule('mon')
