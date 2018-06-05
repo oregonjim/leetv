@@ -39,7 +39,6 @@ import urllib.parse
 from datetime import date, datetime
 import time
 from configparser import ConfigParser
-
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -115,9 +114,13 @@ class MyCombobox(ttk.Combobox):
         super().__init__(*args, **kwargs)
         self.bind('<Map>', self._change_popdown_color)
 
+    # not sure why I need to do this, but the default values
+    # (on my systems) are white text on a white background,
+    # rendering the list invisible.
     def _change_popdown_color(self, *args):
         popdown = self.tk.eval('ttk::combobox::PopdownWindow {}'.format(self))
         self.tk.call('{}.f.l'.format(popdown), 'configure', '-foreground', 'black')
+        self.tk.call('{}.f.l'.format(popdown), 'configure', '-background', 'white')
 
 
 def main():
@@ -161,6 +164,7 @@ def main():
     def get_sc():
         ''' called when radiobutton selected '''
         get_schedule(days[v.get()])
+        update_cb()
 
     def set_sc():
         ''' called when save button clicked '''
@@ -177,6 +181,30 @@ def main():
         for idx in range(48):
             combo[idx].set(names[-1])
             seq[idx].set(seqs[0])
+        update_cb()
+
+    def update_cb():
+        '''
+        set color of combobox text fields
+        based on average episode length:
+        '''
+        for i in range(48):
+            for idx in s.series_list:
+                if idx[0] == combo[i].get():
+                    if idx[0] == 'blank':
+                        # blank series has no length
+                        combo[i].configure(foreground='black')
+                    elif idx[1] < 30:
+                        # series avg is less than 1/2 hour/episode
+                        combo[i].configure(foreground='green')
+                    elif idx[1] >= 30 and idx[1] < 60:
+                        # series avg fits in an hour (2 slots)
+                        combo[i].configure(foreground='blue')
+                    elif idx[1] >= 60:
+                        # series avg is more than an hour
+                        combo[i].configure(foreground='red')
+                    break
+
 
     # get all our media lists to populate the comboboxes with
     s = FileList()
@@ -193,9 +221,20 @@ def main():
 
     root = tk.Tk()
     root.title('LeeTV Configuration Editor')
-    # style = ttk.Style()
+    root.option_add('*TCombobox*Listbox.selectBackground', 'blue')
+    root.option_add('*TCombobox*Listbox.selectForeground', 'white')
+    root.option_add('*TCombobox*Listbox.Background', 'white')
+    root.option_add('*TCombobox*Listbox.Foreground', 'black')
+
+    # ttk styles are buggy.  Order matters and some options are ignored.
+    # time to switch to Qt?
+    style = ttk.Style()
     # print(style.theme_names())
-    # style.theme_use('alt')
+    style.theme_use('alt')
+    style.map('TCombobox', fieldbackground=[('readonly','white')])
+    style.map('TCombobox', selectbackground=[('readonly', 'white')])
+    # style.map('TCombobox', selectforeground=[('readonly', 'black')])
+
 
     buttonframe = ttk.Frame(root, padding='5 5 5 5')
     buttonframe.grid(column=0, row=0, sticky='NSEW')
@@ -300,7 +339,10 @@ def main():
                 hr = times[idx][0:2]
                 mn = times[idx][2:] + 'am'
             txt = '[{}]   {}:{}'.format(times[idx], hr, mn)
-            combo_label.append(ttk.Label(comboframe, text=txt, anchor='w', foreground='green'))
+            combo_label.append(ttk.Label(comboframe,
+                                         text=txt,
+                                         anchor='w',
+                                         foreground='#3f007f'))
             combo_label[idx].grid(row=row*3, column=col, pady=2, sticky='NSEW')
             combo_label[idx].rowconfigure(row*3, weight=1)
             combo_label[idx].columnconfigure(col, weight=1)
@@ -311,8 +353,11 @@ def main():
     for col in range(6):
         for row in range(8):
             idx = col * 8 + row
-            # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
-            combo.append(MyCombobox(comboframe, state='readonly', textvariable=combo_var[idx]))
+            combo.append(ttk.Combobox(comboframe,
+                                    validate='all',
+                                    validatecommand=update_cb,
+                                    state='readonly',
+                                    textvariable=combo_var[idx]))
             combo[idx].grid(row=row*3+1, column=col, padx=8, pady=2, sticky='NSEW')
             combo[idx].rowconfigure(row*3+1, weight=1)
             combo[idx].columnconfigure(col, weight=1)
@@ -324,8 +369,9 @@ def main():
     for col in range(6):
         for row in range(8):
             idx = col * 8 + row
-            # c.append(ttk.Button(root, text=str(idx) + ': ' + str(row) + '-' + str(col)))
-            seq.append(MyCombobox(comboframe, state='readonly', textvariable=seq_var[idx]))
+            seq.append(ttk.Combobox(comboframe,
+                                  state='readonly',
+                                  textvariable=seq_var[idx]))
             seq[idx].grid(row=row*3+2, column=col, padx=8, pady=2, sticky='NSEW')
             seq[idx].rowconfigure(row*3+2, weight=1)
             seq[idx].columnconfigure(col, weight=1)
@@ -335,6 +381,7 @@ def main():
 
     # default to Monday schedule
     get_schedule('mon')
+    update_cb()
 
     root.mainloop()
 
