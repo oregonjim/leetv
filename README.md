@@ -121,6 +121,10 @@ consider piping the output through enscript: ```dnf install enscript```
 Example:
 ``` ltv-print | enscript -f Courier10 -B -c -h -q -p - | lpr```
 
+##### For ltv-config:
+
+```dnf install python-qt5```
+
 ##### For ltv-getnewsweather:
 
 Note: Some or all of these may not be needed, depending on how you want
@@ -216,9 +220,10 @@ various aspects of the system.  Some of them are:
 
   Look at the requirements listed above.  At a minimum, you need
   Python 3, ffprobe, and either mpv (default) or VLC.  Everything
-  else is optional and used mostly for customization.  The two
-  essential programs are ```leetv``` (the main program) and
-  ```ltv-listmedia``` (used to generate your media lists).
+  else is optional and used mostly for customization.  The three
+  essential programs are ```leetv``` (the main program),
+  ```ltv-listmedia``` (to generate your media lists),
+  and ```ltv-config``` (to edit your schedule).
 - - -
 
   The next thing to do is run ```leetv``` once from the command line.

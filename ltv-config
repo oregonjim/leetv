@@ -282,7 +282,7 @@ class ConfigEditor(QWidget):
         self.r[0].toggle()
 
         self.setLayout(grid)
-        self.setWindowTitle('LeeTV Schedule Editor')
+        self.setWindowTitle('LeeTV Schedule Editor v{}'.format(__version__))
         self.show()
 
     def get_schedule(self, day):
