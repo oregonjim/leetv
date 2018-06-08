@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#
+#######################################################################
+#
+# Copyright © 2018 Jim Lee
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#######################################################################
+#
+#  ltv-logrotate
+#
+#  A leetv utility program
+#
+#  Archive old logs and playlists by month
+#
+#  Last update: 2018-06-07
+#
+import sys
+import os
+import argparse
+import urllib.parse
+from datetime import date
+
+from leeutils import *
+
+
+def main(level):
+
+    # create a LOG object
+    log = Log(level=level)
+
+    # asssume no-op until proven otherwise
+    nothing_to_do = True
+
+    this_month = date.strftime(date.today(), '%Y%m')
+
+    # archive all playlists not created this month
+    pl_directory = os.path.join(os.getenv('HOME'), '.leetv')
+    os.chdir(pl_directory)
+    # create list of all playlist files
+    playlists = ('xspf', 'm3u8', 'pls')
+    pl_files = []
+    for file in filewalk(pl_directory):
+        if is_filetype(file, playlists):
+            # exclude this month's files
+            if not os.path.basename(file).startswith(this_month):
+                pl_files.append(os.path.basename(file))
+
+    log.info('Playlist files to archive: {}'.format(len(pl_files)))
+
+    # split into one archive for each month
+    while pl_files:
+        nothing_to_do = False
+        archive_list = []
+        month_to_archive = pl_files[0][:6]
+        for i, file in enumerate(pl_files):
+            if file.startswith(month_to_archive):
+                archive_list.append(file)
+        for i in archive_list:
+            pl_files.remove(i)
+        archive_name = 'pl' + month_to_archive + '.tar.gz'
+        o, e, retcode = call(['tar', 'zcvf', archive_name] + archive_list)
+        if retcode:
+            log.warning('Error creating {}'.format(archive_name))
+        else:
+            log.info('Created Playlist archive {}'.format(archive_name))
+            for file in archive_list:
+                try:
+                    os.remove(file)
+                except OSError:
+                    log.warning('Unable to delete {}!'.format(file))
+
+
+    # archive all log files not created this month
+    log_directory = os.path.join(os.getenv('HOME'), '.leetv', 'log')
+    os.chdir(log_directory)
+    # create list of all log files
+    log_files = []
+    for file in filewalk(log_directory):
+        if file.endswith('.log'):
+            # exclude this month's files
+            if not os.path.basename(file).startswith(this_month):
+                log_files.append(os.path.basename(file))
+
+    log.info('Log files to archive: {}'.format(len(log_files)))
+
+    # split into one archive for each month
+    while log_files:
+        nothing_to_do = False
+        archive_list = []
+        month_to_archive = log_files[0][:6]
+        for i, file in enumerate(log_files):
+            if file.startswith(month_to_archive):
+                archive_list.append(file)
+        for i in archive_list:
+            log_files.remove(i)
+        archive_name = 'log' + month_to_archive + '.tar.gz'
+        o, e, retcode = call(['tar', 'zcvf', archive_name] + archive_list)
+        if retcode:
+            log.warning('Error creating {}'.format(archive_name))
+        else:
+            log.info('Created Log archive {}'.format(archive_name))
+            for file in archive_list:
+                try:
+                    os.remove(file)
+                except OSError:
+                    log.warning('Unable to delete {}!'.format(file))
+
+    if nothing_to_do:
+        log.info('No playlists or log files to process.')
+
+    return 0
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Archive LeeTV logs and playlists")
+    parser.add_argument("-l", "--loglevel", default="INFO", help="log level")
+    args = parser.parse_args()
+    level = args.loglevel.upper()
+    sys.exit(main(level))

@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-06-02
+#  Last update: 2018-06-07
 #
 import os
 import sys
@@ -32,9 +32,32 @@ import re
 import subprocess
 
 
-# Returns the directory the current script (or interpreter) is running in
+def printf(str, *args):
+    """ C-style printf function """
+    # note that setting end to an empty string
+    # causes Python's native print function
+    # to drop the flush call, so we need
+    # to explicitly enable it here in order
+    # to get consistent behavior
+    print(str % args, end='', flush=True)
+
+
+def is_filetype(file, types):
+    """
+    determine if file is a certain type
+    based on a list of extensions
+    """
+    # types is a list of extensions
+    # without leading dot
+    # e.g ['bmp, 'jpg', 'png', 'gif']
+    return os.path.splitext(file)[1].lower()[1:] in types
+
+
 def get_script_directory():
-    """ return directory that the script was executed from """
+    """
+    return directory that the script
+    (or interpreter) was executed from
+    """
     path = os.path.realpath(sys.argv[0])
     if os.path.isdir(path):
         return path
@@ -44,7 +67,10 @@ def get_script_directory():
 
 # list.sort(key=natural_sort)
 def natural_sort(x):
-    """ sorts numbers correctly: (1,2,10,11) NOT (1,10,11,2) """
+    """
+    sorts numbers correctly:
+    (1,2,10,11) NOT (1,10,11,2)
+    """
     return [int(y) if y.isdigit() else y for y in re.split(r'(\d+)', x)]
 
 
@@ -59,8 +85,8 @@ def makepath(*paths):
 
 def abswalk(path):
     '''
-    Generator returning the absolute path of every file (directory or other)
-    under path.
+    Generator returning the absolute path
+    of every file and directory under path.
     '''
     path = os.path.abspath(path)
     for (dirpath, dirnames, filenames) in os.walk(path):
@@ -72,7 +98,8 @@ def abswalk(path):
 
 def filewalk(path):
     '''
-    Generator returning the absolute path of every file under path.
+    Generator returning the absolute path
+    of every file under path.
     '''
     path = os.path.abspath(path)
     for (dirpath, dirnames, filenames) in os.walk(path):
@@ -82,7 +109,8 @@ def filewalk(path):
 
 def dirwalk(path):
     '''
-    Generator returning the absolute path of every directory under path.
+    Generator returning the absolute path
+    of every directory under path.
     '''
     path = os.path.abspath(path)
     for (dirpath, dirnames, filenames) in os.walk(path):
@@ -93,7 +121,8 @@ def dirwalk(path):
 def call(args):
     '''
     Blocking process call.
-    Takes a list of strings like ['ls', '-l'] and returns the 3-tuple
+    Takes a list of strings like
+    ['ls', '-l'] and returns
     (stdout, stderr, returncode).
     '''
     p = subprocess.Popen(args, stderr=subprocess.PIPE,
@@ -126,7 +155,9 @@ class Container:
 
 
 class Log:
-    """ logger class capable of dual output and color """
+    """
+    logger class capable of dual output and color
+    """
     # COLOR CODES
     #
     # FOREGROUND

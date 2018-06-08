@@ -326,8 +326,9 @@ class ConfigEditor(QWidget):
         ''' called when clear button clicked '''
         # set all series boxes to last item ('blank')
         # set all seq boxes to 'linear'
+        lastslot = len(self.names) - 1
         for idx in range(48):
-            self.ser[idx].setCurrentIndex(len(self.names)-1)
+            self.ser[idx].setCurrentIndex(lastslot)
             self.seq[idx].setCurrentIndex(0)
 
     def combo_changed(self, idx):

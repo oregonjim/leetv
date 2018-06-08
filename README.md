@@ -211,6 +211,7 @@ various aspects of the system.  Some of them are:
 ```ltv-index``` - Show the indices of videos in a media list (as used in settings.ini)<BR>
 ```ltv-dupes``` - Detect duplicate videos in a series<BR>
 ```ltv-log``` - Show today's log from the local machine or remote leetv box<BR>
+```ltv-logrotate``` - Archive old playlists and log files by month<BR>
 
 ## Quickstart :
 
