@@ -3,7 +3,7 @@
 #
 #######################################################################
 #
-# Copyright © 2018 Jim Lee
+# Copyright © 2018 Jim Lee <jlee54@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -350,7 +350,7 @@ def create_list(directory, name):
     log.info("{} videos added to the filelist {}".format(count, name))
 
 
-def main(quiet):
+def main(quiet, complete):
     global log
     if quiet:
         log = Log(level='WARNING')
@@ -358,6 +358,9 @@ def main(quiet):
         log = Log(level='INFO')
 
     press_enter = "Press enter to continue anyway, ^C to exit\n"
+
+    complete_series = []
+    incomplete_series = []
 
     # first, check for any directories below the base tv directory
     # that are not represented in the list above
@@ -406,6 +409,11 @@ def main(quiet):
                 input(press_enter)
             except KeyboardInterrupt:
                 sys(exit(1))
+        else:
+            if os.path.exists(os.path.join(path, 'complete.txt')):
+                complete_series.append(path)
+            else:
+                incomplete_series.append(path)
 
     for dir, name in cartoonlist:
         path = os.path.join(basecartoon, dir)
@@ -415,6 +423,26 @@ def main(quiet):
                 input(press_enter)
             except KeyboardInterrupt:
                 sys(exit(1))
+        else:
+            if os.path.exists(os.path.join(path, 'complete.txt')):
+                complete_series.append(path)
+            else:
+                incomplete_series.append(path)
+
+    # I put an empty file called 'complete.txt'
+    # in directories where I have a complete series.
+    # This bit of code saves two lists called 'complete_series.txt'
+    # and 'incomplete_series.txt' in the current directory
+    # so I have a list of series to work on completing.
+    if complete:
+        with open('complete_series.txt', 'w') as fp:
+            fp.write('Complete series:\n---------------\n\n')
+            for dir in complete_series:
+                fp.write('{}\n'.format(os.path.basename(dir[:-1])))
+        with open('incomplete_series.txt', 'w') as fp:
+            fp.write('Incomplete series:\n-----------------\n\n')
+            for dir in incomplete_series:
+                fp.write('{}\n'.format(os.path.basename(dir[:-1])))
 
     try:
         input("All directories and lists accounted for.  Press enter to create lists, ^C to exit:\n")
@@ -448,6 +476,8 @@ def main(quiet):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Create leetv media file list")
     parser.add_argument("-q", "--quiet", default=False, action="store_true", help="no messages")
+    parser.add_argument("-c", "--complete", default=False, action="store_true", help="print list of complete/incomplete series")
     args = parser.parse_args()
     quiet = args.quiet
-    sys.exit(main(quiet))
+    complete = args.complete
+    sys.exit(main(quiet, complete))
