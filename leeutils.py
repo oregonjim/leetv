@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-06-07
+#  Last update: 2018-06-11
 #
 import os
 import sys
@@ -147,6 +147,51 @@ def rename_ini_section(cp, section_from, section_to):
         cp.set(section_to, item[0], item[1])
 
     cp.remove_section(section_from)
+
+
+def cursor_up(n):
+    ''' Move cursor up n lines '''
+    printf("\u001b[%dA", n)
+
+
+def cursor_down(n):
+    ''' Move cursor down n lines '''
+    printf("\u001b[%dB", n)
+
+
+def cursor_right(n):
+    ''' Move cursor right n columns '''
+    printf("\u001b[%dC", n)
+
+
+def cursor_left(n):
+    ''' Move cursor left n columns '''
+    printf("\u001b[%dD", n)
+
+
+def cursor_save():
+    ''' Save cursor position '''
+    printf("\u001b[s")
+
+
+def cursor_restore():
+    ''' Restore cursor position '''
+    printf("\u001b[u")
+
+
+def cursor_erase_eol():
+    ''' Erase from cursor to end of line '''
+    printf("\u001b[K")
+
+
+def cursor_goto(r, c):
+    ''' Absolute cursor positioning '''
+    printf("\u001b[%d;%dH", r, c)
+
+
+def cursor_clear():
+    ''' Clear screen and home cursor (0,0) '''
+    printf("\u001b[2J")
 
 
 class Container:
