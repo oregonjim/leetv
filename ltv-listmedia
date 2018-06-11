@@ -28,7 +28,7 @@
 #  Alternatively, see ltv-listallmedia for a batch
 #  oriented version for large collections.
 #
-#  Last update: 2018-05-30
+#  Last update: 2018-06-11
 #
 #  File format:  videoFilename : DurationInMilliseconds <newline>
 #
@@ -98,7 +98,8 @@ def is_video(file):
     video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
                         '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
                         '.mpg', '.mpeg', '.vob', '.asf', '.wmv', '.flv')
-    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso', '.zip', '.pdf')
+    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso', '.zip',
+                         '.pdf', '.srt')
 
     # ignore videos whose filename begins with '99'
     if os.path.basename(file).startswith('99'):

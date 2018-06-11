@@ -24,7 +24,7 @@
 #
 #  A leetv utility program
 #
-#  Last update: 2018-05-31
+#  Last update: 2018-06-11
 #
 #  Create all media file lists for leetv.  Also warns of directories
 #  not present in the list (and vice-versa).
@@ -50,17 +50,20 @@ import re
 
 from leeutils import *
 
-
+# separate base paths to make it easy
+# to change mount points
 basetv = "/mnt/tv/Television"
 basecartoon = "/mnt/tv/Cartoons"
 basemovie = "/mnt/movies"
 
+# movie collections go here
 movielist = (
              ["Movies/", "MovieNight"],
              ["More Movies/", "MoreMovies"],
              ["Holiday/", "HolidayMovies"]
              )
 
+# tv series collections go here
 tvlist = (
             ["Addams Family/", "AddamsFamily"],
             ["Alfred Hitchcock Presents/", "AlfredHitchcock"],
@@ -78,13 +81,14 @@ tvlist = (
             ["Bewitched/", "Bewitched"],
             ["Big Bang Theory/", "BigBangTheory"],
             ["Bob Newhart/", "BobNewhart"],
+            ["Bonanza/", "Bonanza"],
             ["Bosom Buddies/", "BosomBuddies"],
             ["Brady Bunch/", "BradyBunch"],
+            ["Car 54 Where Are You/", "Car54"],
             ["Card Sharks/", "CardSharks"],
             ["Cheers/", "Cheers"],
             ["Chico and the Man/", "ChicoAndTheMan"],
             ["CHiPs/", "Chips"],
-            ["Columbo/", "Columbo"],
             ["Commercials/", "Commercials"],
             ["Daniel Boone/", "DanielBoone"],
             ["Dennis the Menace/", "DennisTheMenace"],
@@ -114,6 +118,7 @@ tvlist = (
             ["Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
             ["Gidget/", "Gidget"],
             ["Gilligan's Island/", "GilligansIsland"],
+            ["Gimme a Break/", "GimmeABreak"],
             ["Gomer Pyle USMC/", "GomerPyle"],
             ["Good Times/", "GoodTimes"],
             ["Green Acres/", "GreenAcres"],
@@ -127,9 +132,9 @@ tvlist = (
             ["Home Improvement/", "HomeImprovement"],
             ["Honeymooners/", "Honeymooners"],
             ["Honey West/", "HoneyWest"],
-            ["H.R. Pufnstuf/", "HRPufnstuf"],
             ["I Dream of Jeannie/", "IDreamOfJeannie"],
             ["Jack Benny/", "JackBenny"],
+            ["Jeopardy/", "Jeopardy"],
             ["King of Queens/", "KingOfQueens"],
             ["Knight Rider/", "KnightRider"],
             ["Kung Fu/", "KungFu"],
@@ -142,7 +147,9 @@ tvlist = (
             ["Let's Make A Deal/", "LetsMakeADeal"],
             ["Little House on the Prairie/", "LittleHouseOnThePrairie"],
             ["Logan's Run/", "LogansRun"],
+            ["Lone Ranger/", "LoneRanger"],
             ["Lost In Space/", "LostInSpace"],
+            ["Lou Grant/", "LouGrant"],
             ["Love Boat/", "LoveBoat"],
             ["Lucy Show/", "LucyShow"],
             ["Mary Tyler Moore/", "MaryTylerMoore"],
@@ -161,6 +168,7 @@ tvlist = (
             ["Munsters/", "Munsters"],
             ["Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
             ["My Favorite Martian/", "MyFavoriteMartian"],
+            ["My Mother the Car/", "MyMotherTheCar"],
             ["My Three Sons/", "MyThreeSons"],
             ["Newhart/", "Newhart"],
             ["Odd Couple/", "OddCouple"],
@@ -190,10 +198,12 @@ tvlist = (
             ["The Gong Show/", "GongShow"],
             ["The Jeffersons/", "Jeffersons"],
             ["The Life of Riley (1953)/", "LifeOfRiley"],
+            ["The Monkees/", "Monkees"],
             ["The Office (US)/", "Office"],
             ["The Paper Chase/", "PaperChase"],
             ["The Price is Right/", "PriceIsRight"],
             ["The Starlost (1973)/", "Starlost"],
+            ["The World of Sid & Marty Krofft/", "SidAndMarty"],
             ["Three's Company/", "ThreesCompany"],
             ["Three Stooges/", "ThreeStooges"],
             ["Time Tunnel/", "TimeTunnel"],
@@ -204,6 +214,7 @@ tvlist = (
             ["Waltons/", "Waltons"],
             ["Welcome Back Kotter/", "WelcomeBackKotter"],
             ["What's My Line/", "WhatsMyLine"],
+            ["Wheel of Fortune/", "WheelOfFortune"],
             ["Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
             ["Wild Wild West/", "WildWildWest"],
             ["Wings/", "Wings"],
@@ -211,6 +222,7 @@ tvlist = (
             ["Wonderful World of Disney/", "WWOD"]
             )
 
+# cartoon series collections go here
 cartoonlist = (
                 ["Bob's Burgers/", "BobsBurgers"],
                 ["Bump in the Night/", "BumpInTheNight"],
@@ -230,7 +242,6 @@ cartoonlist = (
                 ["Rocky and Bullwinkle/", "RockyAndBullwinkle"],
                 ["Scooby Doo, Where Are You/", "ScoobyDoo"],
                 ["Secret Squirrel/", "SecretSquirrel"],
-                ["Simpsons/", "Simpsons"],
                 ["Snagglepuss/", "Snagglepuss"],
                 ["Speed Racer/", "SpeedRacer"],
                 ["Tennessee Tuxedo/", "TennesseeTuxedo"],
@@ -285,7 +296,8 @@ def is_video(file):
     video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
                         '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
                         '.mpg', '.mpeg', '.vob', '.asf', '.wmv', '.flv')
-    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso', '.zip', '.pdf')
+    common_extensions = ('.jpg', '.png', '.nfo', '.txt', '.iso', '.zip',
+                         '.pdf', '.srt')
 
     # ignore videos whose filename begins with '99'
     if os.path.basename(file).startswith('99'):
