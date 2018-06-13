@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Show indices in a LeeTV media list file as used in settings.ini """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -31,17 +32,19 @@
 #  start a series at a specific episode other than
 #  season 1, episode 1 (index 0).
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-06-13
 #
 import sys
 import os
 import argparse
 import urllib.parse
+import random
 
 from leeutils import Log
 
 
 def get_filelist(filename, shuffle=False):
+    """ get media file list by filename, optionally shuffled """
     f = list()
     t = list()
 
@@ -61,7 +64,7 @@ def get_filelist(filename, shuffle=False):
 
 
 def main(name):
-
+    """ main entry point """
     # create a LOG object
     log = Log(level='INFO')
 
@@ -80,5 +83,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="List media files with index")
     parser.add_argument("-n", "--name", default="Commercials", help="name of the filelist")
     args = parser.parse_args()
-    name = args.name
-    sys.exit(main(name))
+    narg = args.name
+    sys.exit(main(narg))

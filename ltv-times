@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Generate run time statistics for a LeeTV media list file """
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -25,22 +26,24 @@
 #  A leetv utility program
 #
 #  Generate a list of videos in a media list file
-#  sorted by run time
+#  sorted by run time, give min/max/avg statistics
 #
 #  Useful for finding anomalous videos (too short/long)
 #  or checking if a whole series conforms to a time slot
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-06-13
 #
 import sys
 import os
 import argparse
 import urllib.parse
+import random
 
 from leeutils import Log
 
 
 def get_filelist(filename, shuffle=False):
+    """ get media file list by filename, optionally shuffled """
     f = list()
     t = list()
 
@@ -60,12 +63,13 @@ def get_filelist(filename, shuffle=False):
 
 
 def num_sort(x):
+    """ sort numerically by first arg only """
     a = x.split(' ')
     return float(a[0])
 
 
 def main(name):
-
+    """ main entry point """
     # create a LOG object
     log = Log(level='INFO')
 
@@ -75,19 +79,20 @@ def main(name):
     series_file = os.path.join('media', series + '.lst')
     fn, ft = get_filelist(series_file)
     target = []
-    min = 99999999
-    max = 0
+    minimum = 99999999
+    maximum = 0
     total = 0
-    for i, name in enumerate(fn):
+    for i, n in enumerate(fn):
         runtime = int(ft[i]) / 1000 / 60
         total += runtime
-        if runtime > max:
-            max = runtime
-        if runtime < min:
-            min = runtime
+        if runtime > maximum:
+            maximum = runtime
+        if runtime < minimum:
+            minimum = runtime
         if runtime > 0:
-            # log.info('{} {}'.format(runtime, urllib.parse.unquote(name)))
-            target.append('{:2.1f} mins ({:2.1f} hrs) {}'.format(runtime, runtime / 60, urllib.parse.unquote(name)))
+            # log.info('{} {}'.format(runtime, urllib.parse.unquote(n)))
+            target.append('{:2.1f} mins ({:2.1f} hrs) {}'.format(
+                runtime, runtime / 60, urllib.parse.unquote(n)))
 
     sortedlist = sorted(target, key=num_sort)
 
@@ -96,7 +101,7 @@ def main(name):
 
     avg = total / len(fn)
     print('\nCount: {}\nMin: {:2.1f} mins ({:2.1f} hrs)\nMax: {:2.1f} mins ({:2.1f} hrs)\nAvg: {:2.1f} mins ({:2.1f} hrs)'.format(
-        len(fn), min, min / 60, max, max / 60, avg, avg / 60))
+        len(fn), minimum, minimum / 60, maximum, maximum / 60, avg, avg / 60))
     return 0
 
 
@@ -104,5 +109,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="List media files sorted by time")
     parser.add_argument("-n", "--name", default="Commercials", help="name of the filelist")
     args = parser.parse_args()
-    name = args.name
-    sys.exit(main(name))
+    narg = args.name
+    sys.exit(main(narg))

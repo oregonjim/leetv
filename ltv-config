@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702
-#
+""" LeeTV configuration/schedule editor """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -27,25 +27,25 @@
 #
 #  Graphical configuration/schedule editor for leetv
 #
-#  Last update: 2018-06-05
+#  Last update: 2018-06-13
 #
 
 # system libraries
 import sys
 import os
 import urllib.parse
+import random
 from datetime import date, datetime
 import time
 from configparser import ConfigParser
 
 # third-party libraries
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *  # pylint: disable=unused-wildcard-import
+from PyQt5.QtGui import *  # pylint: disable=unused-wildcard-import
+from PyQt5.QtCore import *  # pylint: disable=unused-wildcard-import
 
 # local modules
-from leeutils import *
-
+from leeutils import filewalk
 
 __version__ = '2.00'
 
@@ -64,8 +64,8 @@ class FileList:
             # collect all the media lists
             if series_file.endswith('.lst'):
                 fn, ft = self.get_filelist(series_file)
-                min = 99999999
-                max = 0
+                minimum = 99999999
+                maximum = 0
                 minname = ''
                 maxname = ''
                 total = 0
@@ -75,25 +75,26 @@ class FileList:
                     runtime = int(ft[i]) / 1000 / 60
                     # calc min/max/avg
                     total += runtime
-                    if runtime > max:
-                        max = runtime
+                    if runtime > maximum:
+                        maximum = runtime
                         maxname = name
-                    if runtime < min:
-                        min = runtime
+                    if runtime < minimum:
+                        minimum = runtime
                         minname = name
                 s = os.path.basename(series_file)
                 minname = urllib.parse.unquote(os.path.basename(minname))
                 maxname = urllib.parse.unquote(os.path.basename(maxname))
-                self.series_list.append([s.replace('.lst',''),
-                                        round(total / len(fn), 2),
-                                        round(min, 2),
-                                        minname,
-                                        round(max, 2),
-                                        maxname])
+                self.series_list.append([s.replace('.lst', ''),
+                                         round(total / len(fn), 2),
+                                         round(minimum, 2),
+                                         minname,
+                                         round(maximum, 2),
+                                         maxname])
         self.series_list.sort()
         self.series_list.append(['blank', 0, 0, '', 0, ''])
 
     def get_filelist(self, filename, shuffle=False):
+        """ parse media list file into (name[], duration[])  """
         f = list()
         t = list()
 
@@ -116,7 +117,7 @@ class ConfigEditor(QWidget):
     Main GUI for LeeTV Schedule Editor
     '''
 
-    days=('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')
+    days = ('mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun')
 
     # tuple of 1/2 hour time slots in a day - 24hr time format
     times = ('0000', '0030', '0100', '0130', '0200', '0230',
@@ -140,33 +141,33 @@ class ConfigEditor(QWidget):
 
     # colors are in HTML '#RRGGBB' format
     colors = {
-          'red': '#ff0000',
-          'medred': '#cf0000',
-          'darkred': '#3f0000',
-          'green': '#00ff00',
-          'medgreen': '#00cf00',
-          'darkgreen': '#003f00',
-          'blue': '#0000ff',
-          'medblue': '#0000cf',
-          'darkblue': '#00003f',
-          'yellow': '#ffff00',
-          'gold': '#ffd700',
-          'pink': '#ffc0cb',
-          'bisque': '#ffe4c4',
-          'ivory': '#fffff0',
-          'black': '#000000',
-          'white': '#ffffff',
-          'lightgrey': '#909090',
-          'darkgrey': '#3f3f3f',
-          'grey': '#7f7f7f',
-          'violet': '#ee82ee',
-          'silver': '#c0c0c0',
-          'forestgreen': '#228b22',
-          'brown': '#a52a3a',
-          'chocolate': '#d2691e',
-          'azure': '#fffff0',
-          'orange': '#ffa500'
-         }
+        'red': '#ff0000',
+        'medred': '#cf0000',
+        'darkred': '#3f0000',
+        'green': '#00ff00',
+        'medgreen': '#00cf00',
+        'darkgreen': '#003f00',
+        'blue': '#0000ff',
+        'medblue': '#0000cf',
+        'darkblue': '#00003f',
+        'yellow': '#ffff00',
+        'gold': '#ffd700',
+        'pink': '#ffc0cb',
+        'bisque': '#ffe4c4',
+        'ivory': '#fffff0',
+        'black': '#000000',
+        'white': '#ffffff',
+        'lightgrey': '#909090',
+        'darkgrey': '#3f3f3f',
+        'grey': '#7f7f7f',
+        'violet': '#ee82ee',
+        'silver': '#c0c0c0',
+        'forestgreen': '#228b22',
+        'brown': '#a52a3a',
+        'chocolate': '#d2691e',
+        'azure': '#fffff0',
+        'orange': '#ffa500'
+        }
 
 
     def __init__(self):
@@ -176,6 +177,7 @@ class ConfigEditor(QWidget):
 
 
     def initUI(self):
+        """ Initialize GUI """
 
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -360,10 +362,12 @@ class ConfigEditor(QWidget):
     def confirmation_dialog(self, day):
         ''' give user a chance to abort save '''
         def ok_pressed():
+            """ OK button pressed """
             self.confirmation_flag = True
             d.accept()
 
         def cancel_pressed():
+            """ CANCEL button pressed """
             self.confirmation_flag = False
             d.reject()
 
@@ -371,8 +375,8 @@ class ConfigEditor(QWidget):
         g = QGridLayout()
         g.setSpacing(10)
         l1 = QLabel('Overwrite {}.ini?'.format(day))
-        b1 = QPushButton("Ok",d)
-        b2 = QPushButton("Cancel",d)
+        b1 = QPushButton("Ok", d)
+        b2 = QPushButton("Cancel", d)
         b1.pressed.connect(ok_pressed)
         b2.pressed.connect(cancel_pressed)
         g.addWidget(l1, 0, 0)
@@ -386,14 +390,13 @@ class ConfigEditor(QWidget):
 
 
 def main():
-
+    """ main entry point """
     app = QApplication(sys.argv)
     #app.setStyle('cleanlooks')
-    c = ConfigEditor()
+    c = ConfigEditor()  # pylint: disable=unused-variable
 
     return app.exec_()
 
 
 if __name__ == '__main__':
     sys.exit(main())
-

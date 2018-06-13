@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Show today's LeeTV log (local or remote) """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -28,7 +29,7 @@
 #  either from the local machine or
 #  a remotely mounted machine (default).
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-06-13
 #
 import sys
 import os
@@ -40,7 +41,7 @@ from leeutils import Log
 
 
 def main(local):
-
+    """ main entry point """
     # create a LOG object
     log = Log(level='INFO')
 
@@ -66,5 +67,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Show today's leetv log")
     parser.add_argument("-l", "--local", action="store_true", help="print local machine log")
     args = parser.parse_args()
-    local = args.local
-    sys.exit(main(local))
+    larg = args.local
+    sys.exit(main(larg))

@@ -56,7 +56,7 @@
 #  playlist format with mpv as the media player
 #
 #
-#  Last update: 2018-06-02
+#  Last update: 2018-06-13
 #
 #
 #  USAGE:
@@ -79,10 +79,8 @@ import os
 import platform
 import argparse
 import random
-import urllib.parse
 from datetime import date, datetime
 import time
-from configparser import ConfigParser
 
 # Third-party libraries
 try:
@@ -93,135 +91,11 @@ except ModuleNotFoundError:
 
 # Local modules
 from leeutils import Log
-from ltv import Tv
-
+from playlist import Playlist
+from schedule import Schedule
 
 # program version
-__version__ = '1.13-pre3'
-
-
-def get_settings(log, tv, settings, slot, fn):
-    """ get settings for this slot and pick the next episode (index) """
-    today = date.strftime(date.today(), '%Y%m%d')
-    if settings.has_section(slot['series']):
-        lastdate = settings.get(slot['series'], 'lastdate', fallback = '00000000')
-        index = settings.getint(slot['series'], 'lastplayed', fallback = 0)
-        skip = settings.getint(slot['series'], 'skip', fallback = 0)
-        if (lastdate != today) or slot['seq'].isnumeric():
-            # pick a new episode
-            if slot['seq'] == 'linear':
-                if not skip:
-                    index += 1
-                else:
-                    index += skip
-                if index >= len(fn):
-                    index = 0
-                    log.info("Series {} rolled over".format(slot['series']))
-            elif slot['seq'].isnumeric():
-                # multiple episodes in one day
-                index += int(slot['seq']) - 1
-                if index >= len(fn):
-                    # end of series, start over
-                    log.info("Series {} rolled over".format(slot['series']))
-                    index -= len(fn)
-            else:  # slot['seq'] is 'random'
-                index = random.randrange(0, len(fn))
-                # check to see if we've picked this index in the past
-                rndseries = ConfigParser()
-                rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
-                rndseries.read(rndseries_file)
-                name = os.path.splitext(
-                    os.path.basename(fn[index]))[0]
-                if rndseries.has_section(name):
-                    # already played this one
-                    # keep selecting random episodes until
-                    # we find an unplayed one
-                    tries = len(fn) * 10 + 1
-                    while tries:
-                        index = random.randrange(0, len(fn))
-                        name = os.path.splitext(
-                            os.path.basename(fn[index]))[0]
-                        if not rndseries.has_section(name):
-                            # we found an unplayed episode
-                            break
-                        tries -= 1
-                    if not tries:
-                        log.warning("Unable to find unplayed episode for {}".format(slot['series']))
-                        try:
-                            dst = os.path.join(tv.directory, 'config', slot['series'] + '.old')
-                            os.rename(rndseries_file, dst)
-                            log.warning("Series reset: moved {} to {}".format(rndseries_file, dst))
-                        except OSError:
-                            log.warning("Unable to create {}".format(dst))
-    else:
-        # no saved section, start a new one
-        settings.add_section(slot['series'])
-        if slot['seq'] == 'linear':
-            index = 0
-        elif slot['seq'].isnumeric():
-            # this would be an error in the schedule:
-            # if seq is a number, there should have been
-            # a 'linear' or 'random' before it which would
-            # have created the section in settings.ini
-            log.warning('Series {} with numeric seq {} before linear/random'.format(
-                slot['series'], slot['seq']))
-            index = int(slot['seq']) - 2
-        else:  # slot['seq'] is 'random'
-            index = random.randrange(0, len(fn))
-            # check to see if we've picked this index in the past
-            rndseries = ConfigParser()
-            rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
-            rndseries.read(rndseries_file)
-            name = os.path.splitext(
-                os.path.basename(fn[index]))[0]
-            if rndseries.has_section(name):
-                tries = len(fn) * 10 + 1
-                while tries:
-                    index = random.randrange(0, len(fn))
-                    name = os.path.splitext(
-                        os.path.basename(fn[index]))[0]
-                    if not rndseries.has_section(name):
-                        # we found an unplayed episode
-                        break
-                    tries -= 1
-                if not tries:
-                    log.info("Unable to find unplayed episode for {}".format(slot['series']))
-                    try:
-                        dst = os.path.join(tv.directory, 'config', slot['series'] + '.old')
-                        os.rename(rndseries_file, dst)
-                        log.warning("Series reset: moved {} to {}".format(rndseries_file, dst))
-                    except OSError:
-                        log.warning("Unable to create {}".format(dst))
-
-    return index
-
-
-def update_settings(log, tv, settings, slot, fn, index):
-    """ update settings after adding a video """
-    today = date.strftime(date.today(), '%Y%m%d')
-    if not slot['seq'].isnumeric():
-        settings.set(slot['series'], 'lastplayed', str(index))
-        settings.set(slot['series'], 'lastdate', today)
-        settings.set(slot['series'], 'skip', '0')
-        if not slot['seq'] == 'linear':
-            # seq is 'random': save name so we don't play it again
-            if slot['series'].lower() == 'settings':
-                log.warning("Please do not name a series {}!".format(slot['series']))
-                log.warning("Changes to {} will not be tracked".format(slot['series']))
-            else:
-                rndseries = ConfigParser()
-                rndseries_file = os.path.join(tv.directory, 'config', slot['series'] + '.ini')
-                rndseries.read(rndseries_file)
-                name = os.path.splitext(
-                    os.path.basename(fn[index]))[0]
-                if not rndseries.has_section(name):
-                    log.debug("Marking played episode: {}".format(name))
-                    rndseries.add_section(name)
-                    rndseries.set(name, 'lastdate', today)
-                    with open(rndseries_file, 'w') as rndf:
-                        rndseries.write(rndf)
-    else:
-        settings.set(slot['series'], 'skip', str(slot['seq']))
+__version__ = '1.20'
 
 
 # main entry point.  START HERE
@@ -241,25 +115,21 @@ def main(args):
     # create a LOG object
     log = Log(level=args.loglevel.upper())
 
-    # create a TV object
-    tv = Tv(log, args.exclude)
+    p = Playlist(log, args.exclude)
 
-    # set up log file AFTER the TV object validates the installation directory
-    log.set_output(os.path.join(tv.directory, 'log', today + '.log'), dualoutput=args.verbose)
+    # set up log file AFTER the playlist object validates the installation directory
+    log.set_output(os.path.join(p.directory, 'log', today + '.log'), dualoutput=args.verbose)
 
     log.info(40 * '-')
     log.info('LeeTV {} Copyright (C) 2018 by Jim Lee'.format(__version__))
     log.info(40 * '-')
     log.info('Platform: {} {}'.format(platform.system(), platform.release()))
-    log.info('LeeTV={}'.format(tv.directory))
+    log.info('LeeTV={}'.format(p.directory))
 
-    # open global settings file
-    settings = ConfigParser()
-    settings_file = os.path.join(tv.directory, 'config', 'settings.ini')
-    settings.read(settings_file)
+    s = Schedule(log)
 
     # playlist filename
-    playlist_file = os.path.join(tv.directory, today + '.' + args.format.lower())
+    playlist_file = os.path.join(p.directory, today + '.' + args.format.lower())
 
     if args.noplaylist:
         # user doesn't want to create a playlist
@@ -273,19 +143,15 @@ def main(args):
             # (single video, yes - playlist, no) - however, the capabilty is here
             # if I ever find something that implements it.  Right now, we will just
             # play the playlist from the beginning.
-            offset_s = tv.get_offset_into_playlist(datetime.now())
+            offset_s = p.get_offset_into_playlist(datetime.now())
             # start playing!
             if args.player.lower() == 'none':
                 # no playlist, no player - not much else for us to do!
                 log.warning("Player 'none' and --noplaylist selected.  What did you want me to do?")
-            tv.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
+            p.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
             sys.exit(0)
         else:
             log.error('Playlist file {} does not exist!'.format(playlist_file))
-
-    # get schedule for this day of the week
-    sched = ConfigParser()
-    sched.read(os.path.join(tv.directory, 'sched', tv.get_dow(date.today()) + '.ini'))
 
     # no overtime videos yet
     overtime_slots = 0
@@ -294,7 +160,7 @@ def main(args):
     # arg format can be '1234' or '12:34' or 'now'
     bad_timestart = False
     if not args.timestart or args.timestart.lower() == 'now':
-        offset_s = tv.get_offset_into_playlist(datetime.now())
+        offset_s = p.get_offset_into_playlist(datetime.now())
     elif ':' in args.timestart and len(args.timestart) == 5:
         h = int(args.timestart[0:2])
         m = int(args.timestart[3:5])
@@ -312,13 +178,13 @@ def main(args):
 
     if bad_timestart:
         log.error(
-            'Invalid timestart parameter: {} (should be hhmm or hh:mm or now)'.format(args.timestart))
+            'Invalid timestart: {} (should be hhmm or hh:mm or now)'.format(args.timestart))
 
     log.info('Run: {}'.format(datetime.now().strftime("%a %b %d, %Y %I:%M%p")))
-    log.info('Offset: {} ({}s)'.format(tv.running_time_ms_to_timestamp(offset_s * 1000), offset_s))
+    log.info('Offset: {} ({}s)'.format(p.running_time_ms_to_timestamp(offset_s * 1000), offset_s))
 
     # how many commercials we have in the pool
-    log.info('Commercial pool: {}'.format(len(tv.cn)))
+    log.info('Commercial pool: {}'.format(len(p.cn)))
 
     # iterate through all the time slots
     # there are four major paths:
@@ -333,16 +199,16 @@ def main(args):
     #      fill rest with commercials
     #   4) we're filling up the end of an 'overtime' slot:
     #      fill rest of last slot with commercials
-    for slot in tv.timeslot():
+    for slot in s.timeslot():
         # MAIN LOOP
         #
         # slot['label'] = '0000' '0030' '0100' '0130'...
         # slot['mins']  = 0 30 60 90...
         #
         log.debug("LOOP START: Slot: {} BaseMins: {} Running: {:.3f}".format(
-            slot['label'], slot['mins'], tv.ms_to_min(tv.running_time_ms)))
+            slot['label'], slot['mins'], p.ms_to_min(p.running_time_ms)))
 
-        slot_end_ms = tv.min_to_ms(slot['mins'] + 30)
+        slot_end_ms = p.min_to_ms(slot['mins'] + 30)
 
         # if we're not starting at midnight, figure out where
         # in the schedule 'now' is located and build from there
@@ -353,7 +219,7 @@ def main(args):
             # if we're run within 30 seconds of midnight, assume we want
             # to start at the beginning of the midnight slot and drop
             # down to normal slot processing.
-            tv.running_time_ms += offset_s * 1000
+            p.running_time_ms += offset_s * 1000
         elif offset_s > (slot['mins'] * 60) and offset_s < ((slot['mins'] + 30) * 60):
             # 'now' is somewhere in the current time slot
 
@@ -362,42 +228,42 @@ def main(args):
 
             # first, add the unused portion of this time slot
             # to running time
-            tv.running_time_ms += (offset_s - (slot['mins'] * 60)) * 1000
+            p.running_time_ms += (offset_s - (slot['mins'] * 60)) * 1000
 
             # calculate how much time we have left in the slot (mS)
-            target_ms = slot_end_ms - tv.running_time_ms
+            target_ms = slot_end_ms - p.running_time_ms
 
             log.debug('OFFSET START: Target: {:.3f} Slot: {} Running: {:.3f}'.format(
-                tv.ms_to_min(target_ms), slot['label'], tv.ms_to_min(tv.running_time_ms)))
+                p.ms_to_min(target_ms), slot['label'], p.ms_to_min(p.running_time_ms)))
 
             # see if there's enough time left in this slot
             # to fit the main program video
             if slot['series'] != 'blank':
-                fn, ft = tv.get_medialist(slot)
+                fn, ft = p.get_medialist(slot)
                 # get the next episode to play
-                index = get_settings(log, tv, settings, slot, fn)
+                index = s.get_next_index(slot, fn)
 
                 # can we fit an episode before the end of the time slot?
                 if int(ft[index]) <= target_ms:
-                    tv.add_video(fn[index], ft[index], series=slot['series'])
+                    p.add_video(fn[index], ft[index], series=slot['series'])
                     target_ms -= int(ft[index])
-                    update_settings(log, tv, settings, slot, fn, index)
+                    s.update(slot, fn, index)
 
             log.debug(
                 'INITIAL COMMERCIAL FILL: Target: {:.3f}m Slot: {} Mins: {} Running: {:.3f}'.format(
-                    tv.ms_to_min(target_ms),
+                    p.ms_to_min(target_ms),
                     slot['label'],
                     slot['mins'],
-                    tv.ms_to_min(tv.running_time_ms)))
+                    p.ms_to_min(p.running_time_ms)))
 
             # fill rest of slot with random commercials
-            tv.do_commercial_fill(target_ms)
+            p.do_commercial_fill(target_ms)
             # return to main loop and resume normal programming
             continue
         elif offset_s > (slot['mins'] * 60):
             # we're not up to 'now' yet
             log.debug('Skipping slot {}'.format(slot['label']))
-            tv.running_time_ms += tv.min_to_ms(30)
+            p.running_time_ms += p.min_to_ms(30)
             # return to main loop until we get to 'now' in the schedule
             continue
 
@@ -425,32 +291,32 @@ def main(args):
             #
             if not args.exclude:
                 # bumper video at start of every slot
-                tv.add_bumper_video()
+                p.add_bumper_video()
                 if slot['mins'] % 60:
                     # show weather at the bottom of the hour
-                    tv.add_weather_video()
+                    p.add_weather_video()
                 else:
                     # show news at the top of the hour
-                    tv.add_news_video()
+                    p.add_news_video()
 
             # Do we have a series programmed for this time slot?
             if slot['series'] != 'blank':
-                fn, ft = tv.get_medialist(slot)
+                fn, ft = p.get_medialist(slot)
                 # get next episode to play
-                index = get_settings(log, tv, settings, slot, fn)
+                index = s.get_next_index(slot, fn)
 
                 # add the main video to the master list
                 # and save the lastplayed/lastdate info
-                tv.add_video(fn[index], ft[index], series=slot['series'])
-                update_settings(log, tv, settings, slot, fn, index)
+                p.add_video(fn[index], ft[index], series=slot['series'])
+                s.update(slot, fn, index)
 
                 # if current video > 30 minutes, abort Commercial fill
                 # and figure out how many time slots to skip before
                 # resuming programming
-                if tv.ms_to_min(int(ft[index])) > 30:
+                if p.ms_to_min(int(ft[index])) > 30:
                     # how many slots to skip before resuming
                     # normal programming
-                    overtime_slots = tv.ms_to_min(int(ft[index])) // 30
+                    overtime_slots = p.ms_to_min(int(ft[index])) // 30
                     log.debug(
                         "Video greater than 30 minutes.  Skipping {} slot(s)".format(
                             overtime_slots))
@@ -458,9 +324,9 @@ def main(args):
 
                 # if current video is <= 15 minutes, try to fit more
                 # in this time slot (intended mainly for cartoons)
-                elif tv.ms_to_min(int(ft[index])) <= 15:
+                elif p.ms_to_min(int(ft[index])) <= 15:
                     log.debug("Short video.  Trying to fit more...")
-                    target_ms = slot_end_ms - tv.running_time_ms
+                    target_ms = slot_end_ms - p.running_time_ms
                     while True:
                         # try another episode
                         index += 1
@@ -470,9 +336,9 @@ def main(args):
                         if int(ft[index]) <= target_ms:
                             # we can fit another one
                             log.debug("Adding video to current slot")
-                            tv.add_video(fn[index], ft[index], series=slot['series'])
+                            p.add_video(fn[index], ft[index], series=slot['series'])
                             target_ms -= int(ft[index])
-                            # don't call update_settings() here as these
+                            # don't call s.update() here as these
                             # are only supplemental videos
                         else:
                             # no room for another video, go on to next slot
@@ -482,19 +348,19 @@ def main(args):
                 # time slot is 'blank', show fill video
                 if not args.exclude:
                     log.debug('BLANK SLOT: {} (adding fill video)'.format(slot['label']))
-                    tv.add_fill_video()
+                    p.add_fill_video()
                     continue
 
             # now, fill rest of slot with random commercials
             # calculate how much time we have left in the slot (mS)
-            target_ms = slot_end_ms - tv.running_time_ms
+            target_ms = slot_end_ms - p.running_time_ms
             log.debug('COMMERCIAL FILL: Target: {:.3f}m Slot: {} Mins: {} Running: {:.3f}'.format(
-                tv.ms_to_min(target_ms),
+                p.ms_to_min(target_ms),
                 slot['label'], slot['mins'],
-                tv.ms_to_min(tv.running_time_ms)))
+                p.ms_to_min(p.running_time_ms)))
 
             # do the commercial fill
-            tv.do_commercial_fill(target_ms)
+            p.do_commercial_fill(target_ms)
         else:
             # previous slot ran overtime by # of 'overtime_slots'
             # overtime_slots is > 0, decrement by one slot
@@ -504,46 +370,40 @@ def main(args):
             if not overtime_slots:
                 # this is the slot where the overtime video ends
                 # calculate how much time we have left in the slot (mS)
-                target_ms = slot_end_ms - tv.running_time_ms
+                target_ms = slot_end_ms - p.running_time_ms
                 log.debug('OVERTIME FILL: Target: {:.3f} Slot: {} Running: {:.3f}'.format(
-                    tv.ms_to_min(target_ms), slot['label'], tv.ms_to_min(tv.running_time_ms)))
+                    p.ms_to_min(target_ms), slot['label'], p.ms_to_min(p.running_time_ms)))
 
                 # see if there's enough time left in this slot
                 # to fit the main program video
                 if slot['series'] != 'blank':
-                    fn, ft = tv.get_medialist(slot)
+                    fn, ft = p.get_medialist(slot)
                     # pick a new episode
-                    index = get_settings(log, tv, settings, slot, fn)
+                    index = s.get_next_index(slot, fn)
 
                     # can we fit an episode before the end of the time slot?
                     if int(ft[index]) <= target_ms:
-                        tv.add_video(fn[index], ft[index], series=slot['series'])
+                        p.add_video(fn[index], ft[index], series=slot['series'])
                         target_ms -= int(ft[index])
-                        update_settings(log, tv, settings, slot, fn, index)
+                        s.update(slot, fn, index)
 
                 # do the commercial fill
-                tv.do_commercial_fill(target_ms)
+                p.do_commercial_fill(target_ms)
 
     # now, update settings.ini with new data
-    log.info('Updating settings.ini')
-    with open(settings_file, 'w') as setf:
-        settings.write(setf)
+    s.write()
 
     # update list of already used commercials
-    used_file = os.path.join(tv.directory, 'config', 'used.lst')
-    log.info('Updating used.lst')
-    with open(used_file, 'w') as usedf:
-        for i in tv.used:
-            usedf.write(i + '\n')
+    p.write_used()
 
     # calculate playlist total running time
-    total_ms = tv.running_time_ms - (offset_s * 1000)
+    total_ms = p.running_time_ms - (offset_s * 1000)
 
     # get the playlist ready (save to ~/.leetv)
-    tv.write_playlist(playlist_file, fmt=args.format.lower())
+    p.write_playlist(playlist_file, fmt=args.format.lower())
 
     log.info('Playlist running time: {:.2f} seconds ({:.2f} hrs)'.format(
-        total_ms / 1000, tv.ms_to_hr(total_ms)))
+        total_ms / 1000, p.ms_to_hr(total_ms)))
 
     # what was the biggest drift error due to not having enough commercials
     # of different lengths for an exact fill?
@@ -554,10 +414,10 @@ def main(args):
     # that are shorter than this number will improve/eliminate drift.  A few network logos
     # (e.g. NBC peacock or CBS 'eye') or station IDs in the 3-5 second range usually does it.
     # Really, just a few videos in the sub-15 second range will make drift unnoticeable.
-    log.info('Maximum time slot drift: {:.2f} seconds'.format(tv.drift_ms / 1000))
+    log.info('Maximum time slot drift: {:.2f} seconds'.format(p.drift_ms / 1000))
 
     # how many commercials are left in the pool for tomorrow?
-    log.info('Commercial pool: {}'.format(len(tv.cn)))
+    log.info('Commercial pool: {}'.format(len(p.cn)))
 
     if psutil_installed:
         log.info('Memory used: {:.2f} MB'.format(process.memory_full_info().uss / 1024 / 1024))
@@ -565,7 +425,7 @@ def main(args):
     log.info('Total execution time: {:.2f} seconds'.format(time.time() - start_time_s))
 
     # start playing!
-    tv.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
+    p.start_player(args.player, playlist_file, offset_s, streaming=args.stream)
 
     log.info(40 * '-')
 

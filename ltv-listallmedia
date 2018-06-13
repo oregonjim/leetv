@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Batch create LeeTV media list files """
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -24,7 +25,7 @@
 #
 #  A leetv utility program
 #
-#  Last update: 2018-06-11
+#  Last update: 2018-06-13
 #
 #  Create all media file lists for leetv.  Also warns of directories
 #  not present in the list (and vice-versa).
@@ -48,7 +49,7 @@ import subprocess
 import json
 import re
 
-from leeutils import *
+from leeutils import Log, natural_sort
 
 # separate base paths to make it easy
 # to change mount points
@@ -58,216 +59,216 @@ basemovie = "/mnt/movies"
 
 # movie collections go here
 movielist = (
-             ["Movies/", "MovieNight"],
-             ["More Movies/", "MoreMovies"],
-             ["Holiday/", "HolidayMovies"]
-             )
+    ["Movies/", "MovieNight"],
+    ["More Movies/", "MoreMovies"],
+    ["Holiday/", "HolidayMovies"]
+    )
 
 # tv series collections go here
 tvlist = (
-            ["Addams Family/", "AddamsFamily"],
-            ["Alfred Hitchcock Presents/", "AlfredHitchcock"],
-            ["All In The Family/", "AllInTheFamily"],
-            ["America's Funniest Home Videos/", "AFV"],
-            ["Andy Griffith/", "AndyGriffith"],
-            ["Banana Splits/", "BananaSplits"],
-            ["Barney Miller/", "BarneyMiller"],
-            ["Batman/", "Batman"],
-            ["Battlestar Galactica/", "BattlestarGalactica"],
-            ["Baywatch/", "Baywatch"],
-            ["Beat the Clock/", "BeatTheClock"],
-            ["Benson/", "Benson"],
-            ["Beverly Hillbillies/", "BeverlyHillbillies"],
-            ["Bewitched/", "Bewitched"],
-            ["Big Bang Theory/", "BigBangTheory"],
-            ["Bob Newhart/", "BobNewhart"],
-            ["Bonanza/", "Bonanza"],
-            ["Bosom Buddies/", "BosomBuddies"],
-            ["Brady Bunch/", "BradyBunch"],
-            ["Car 54 Where Are You/", "Car54"],
-            ["Card Sharks/", "CardSharks"],
-            ["Cheers/", "Cheers"],
-            ["Chico and the Man/", "ChicoAndTheMan"],
-            ["CHiPs/", "Chips"],
-            ["Commercials/", "Commercials"],
-            ["Daniel Boone/", "DanielBoone"],
-            ["Dennis the Menace/", "DennisTheMenace"],
-            ["Dick Van Dyke/", "DickVanDyke"],
-            ["Diff'rent Strokes/", "DifferentStrokes"],
-            ["Dinosaurs/", "Dinosaurs"],
-            ["Dobie Gillis/", "DobieGillis"],
-            ["Donny and Marie/", "DonnyAndMarie"],
-            ["Dukes of Hazzard/", "DukesOfHazzard"],
-            ["Everybody Loves Raymond/", "EverybodyLovesRaymond"],
-            ["Facts of Life/", "FactsOfLife"],
-            ["Family Feud/", "FamilyFeud"],
-            ["Family Matters/", "FamilyMatters"],
-            ["Family Ties/", "FamilyTies"],
-            ["Fantasy Island/", "FantasyIsland"],
-            ["Father Knows Best/", "FatherKnowsBest"],
-            ["Fawlty Towers/", "FawltyTowers"],
-            ["Flipper (1964)/", "Flipper"],
-            ["Flying Nun/", "FlyingNun"],
-            ["Frasier/", "Frasier"],
-            ["Fresh Prince of Bel-Air/", "FreshPrince"],
-            ["Friends/", "Friends"],
-            ["Full House/", "FullHouse"],
-            ["F Troop/", "FTroop"],
-            ["Game Shows/", "GameShows"],
-            ["Get Smart/", "GetSmart"],
-            ["Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
-            ["Gidget/", "Gidget"],
-            ["Gilligan's Island/", "GilligansIsland"],
-            ["Gimme a Break/", "GimmeABreak"],
-            ["Gomer Pyle USMC/", "GomerPyle"],
-            ["Good Times/", "GoodTimes"],
-            ["Green Acres/", "GreenAcres"],
-            ["Growing Pains/", "GrowingPains"],
-            ["Gunsmoke/", "Gunsmoke"],
-            ["Happy Days/", "HappyDays"],
-            ["Hee Haw/", "HeeHaw"],
-            ["Hill Street Blues/", "HillStreetBlues"],
-            ["Hogan's Heroes/", "HogansHeroes"],
-            ["Hollywood Squares/", "HollywoodSquares"],
-            ["Home Improvement/", "HomeImprovement"],
-            ["Honeymooners/", "Honeymooners"],
-            ["Honey West/", "HoneyWest"],
-            ["I Dream of Jeannie/", "IDreamOfJeannie"],
-            ["Jack Benny/", "JackBenny"],
-            ["Jeopardy/", "Jeopardy"],
-            ["King of Queens/", "KingOfQueens"],
-            ["Knight Rider/", "KnightRider"],
-            ["Kung Fu/", "KungFu"],
-            ["Land of the Giants/", "LandOfTheGiants"],
-            ["Lassie/", "Lassie"],
-            ["Last Man Standing (2011)/", "LastManStanding"],
-            ["Laurel & Hardy/", "LaurelAndHardy"],
-            ["Laverne & Shirley/", "LaverneAndShirley"],
-            ["Leave It To Beaver/", "LeaveItToBeaver"],
-            ["Let's Make A Deal/", "LetsMakeADeal"],
-            ["Little House on the Prairie/", "LittleHouseOnThePrairie"],
-            ["Logan's Run/", "LogansRun"],
-            ["Lone Ranger/", "LoneRanger"],
-            ["Lost In Space/", "LostInSpace"],
-            ["Lou Grant/", "LouGrant"],
-            ["Love Boat/", "LoveBoat"],
-            ["Lucy Show/", "LucyShow"],
-            ["Mary Tyler Moore/", "MaryTylerMoore"],
-            ["MASH/", "MASH"],
-            ["Match Game/", "MatchGame"],
-            ["Mayberry RFD/", "MayberryRFD"],
-            ["McHale's Navy/", "McHalesNavy"],
-            ["Misc/", "MiscTV"],
-            ["Mission Impossible/", "MissionImpossible"],
-            ["Mister Ed/", "MisterEd"],
-            ["Mister Rogers/", "MisterRogers"],
-            ["Monk/", "Monk"],
-            ["Monty Python's Flying Circus/", "MontyPython"],
-            ["Mork & Mindy/", "MorkAndMindy"],
-            ["Mr Wizard/", "MrWizard"],
-            ["Munsters/", "Munsters"],
-            ["Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
-            ["My Favorite Martian/", "MyFavoriteMartian"],
-            ["My Mother the Car/", "MyMotherTheCar"],
-            ["My Three Sons/", "MyThreeSons"],
-            ["Newhart/", "Newhart"],
-            ["Odd Couple/", "OddCouple"],
-            ["One Day at a Time/", "OneDayAtATime"],
-            ["Partridge Family/", "PartridgeFamily"],
-            ["Password/", "Password"],
-            ["Petticoat Junction/", "PetticoatJunction"],
-            ["Phil Silvers Show/", "PhilSilvers"],
-            ["Planet of the Apes/", "PlanetOfTheApes"],
-            ["Police Squad/", "PoliceSquad"],
-            ["Quark/", "Quark"],
-            ["Rhoda/", "Rhoda"],
-            ["Rockford Files/", "RockfordFiles"],
-            ["Room 222/", "Room222"],
-            ["Sanford and Son/", "SanfordAndSon"],
-            ["Smothers Brothers/", "SmothersBrothers"],
-            ["Soap/", "Soap"],
-            ["Space 1999/", "Space1999"],
-            ["Star Trek TOS/", "StarTrek"],
-            ["Survivors/", "Survivors"],
-            ["Tattletales/", "Tattletales"],
-            ["Taxi/", "Taxi"],
-            ["The Adventures of Ozzie and Harriet/", "OzzieAndHarriet"],
-            ["The Best of the Dean Martin Show/", "DeanMartin"],
-            ["The Carol Burnett Show/", "CarolBurnett"],
-            ["The Golden Girls/", "GoldenGirls"],
-            ["The Gong Show/", "GongShow"],
-            ["The Jeffersons/", "Jeffersons"],
-            ["The Life of Riley (1953)/", "LifeOfRiley"],
-            ["The Monkees/", "Monkees"],
-            ["The Office (US)/", "Office"],
-            ["The Paper Chase/", "PaperChase"],
-            ["The Price is Right/", "PriceIsRight"],
-            ["The Starlost (1973)/", "Starlost"],
-            ["The World of Sid & Marty Krofft/", "SidAndMarty"],
-            ["Three's Company/", "ThreesCompany"],
-            ["Three Stooges/", "ThreeStooges"],
-            ["Time Tunnel/", "TimeTunnel"],
-            ["Tremors/", "Tremors"],
-            ["Twilight Zone/", "TwilightZone"],
-            ["UFO/", "UFO"],
-            ["Undersea World of Jacques Cousteau/", "JacquesCousteau"],
-            ["Waltons/", "Waltons"],
-            ["Welcome Back Kotter/", "WelcomeBackKotter"],
-            ["What's My Line/", "WhatsMyLine"],
-            ["Wheel of Fortune/", "WheelOfFortune"],
-            ["Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
-            ["Wild Wild West/", "WildWildWest"],
-            ["Wings/", "Wings"],
-            ["WKRP In Cincinnati/", "WKRP"],
-            ["Wonderful World of Disney/", "WWOD"]
-            )
+    ["Addams Family/", "AddamsFamily"],
+    ["Alfred Hitchcock Presents/", "AlfredHitchcock"],
+    ["All In The Family/", "AllInTheFamily"],
+    ["America's Funniest Home Videos/", "AFV"],
+    ["Andy Griffith/", "AndyGriffith"],
+    ["Banana Splits/", "BananaSplits"],
+    ["Barney Miller/", "BarneyMiller"],
+    ["Batman/", "Batman"],
+    ["Battlestar Galactica/", "BattlestarGalactica"],
+    ["Baywatch/", "Baywatch"],
+    ["Beat the Clock/", "BeatTheClock"],
+    ["Benson/", "Benson"],
+    ["Beverly Hillbillies/", "BeverlyHillbillies"],
+    ["Bewitched/", "Bewitched"],
+    ["Big Bang Theory/", "BigBangTheory"],
+    ["Bob Newhart/", "BobNewhart"],
+    ["Bonanza/", "Bonanza"],
+    ["Bosom Buddies/", "BosomBuddies"],
+    ["Brady Bunch/", "BradyBunch"],
+    ["Car 54 Where Are You/", "Car54"],
+    ["Card Sharks/", "CardSharks"],
+    ["Cheers/", "Cheers"],
+    ["Chico and the Man/", "ChicoAndTheMan"],
+    ["CHiPs/", "Chips"],
+    ["Commercials/", "Commercials"],
+    ["Daniel Boone/", "DanielBoone"],
+    ["Dennis the Menace/", "DennisTheMenace"],
+    ["Dick Van Dyke/", "DickVanDyke"],
+    ["Diff'rent Strokes/", "DifferentStrokes"],
+    ["Dinosaurs/", "Dinosaurs"],
+    ["Dobie Gillis/", "DobieGillis"],
+    ["Donny and Marie/", "DonnyAndMarie"],
+    ["Dukes of Hazzard/", "DukesOfHazzard"],
+    ["Everybody Loves Raymond/", "EverybodyLovesRaymond"],
+    ["Facts of Life/", "FactsOfLife"],
+    ["Family Feud/", "FamilyFeud"],
+    ["Family Matters/", "FamilyMatters"],
+    ["Family Ties/", "FamilyTies"],
+    ["Fantasy Island/", "FantasyIsland"],
+    ["Father Knows Best/", "FatherKnowsBest"],
+    ["Fawlty Towers/", "FawltyTowers"],
+    ["Flipper (1964)/", "Flipper"],
+    ["Flying Nun/", "FlyingNun"],
+    ["Frasier/", "Frasier"],
+    ["Fresh Prince of Bel-Air/", "FreshPrince"],
+    ["Friends/", "Friends"],
+    ["Full House/", "FullHouse"],
+    ["F Troop/", "FTroop"],
+    ["Game Shows/", "GameShows"],
+    ["Get Smart/", "GetSmart"],
+    ["Ghost and Mrs. Muir/", "GhostAndMrsMuir"],
+    ["Gidget/", "Gidget"],
+    ["Gilligan's Island/", "GilligansIsland"],
+    ["Gimme a Break/", "GimmeABreak"],
+    ["Gomer Pyle USMC/", "GomerPyle"],
+    ["Good Times/", "GoodTimes"],
+    ["Green Acres/", "GreenAcres"],
+    ["Growing Pains/", "GrowingPains"],
+    ["Gunsmoke/", "Gunsmoke"],
+    ["Happy Days/", "HappyDays"],
+    ["Hee Haw/", "HeeHaw"],
+    ["Hill Street Blues/", "HillStreetBlues"],
+    ["Hogan's Heroes/", "HogansHeroes"],
+    ["Hollywood Squares/", "HollywoodSquares"],
+    ["Home Improvement/", "HomeImprovement"],
+    ["Honeymooners/", "Honeymooners"],
+    ["Honey West/", "HoneyWest"],
+    ["I Dream of Jeannie/", "IDreamOfJeannie"],
+    ["Jack Benny/", "JackBenny"],
+    ["Jeopardy/", "Jeopardy"],
+    ["King of Queens/", "KingOfQueens"],
+    ["Knight Rider/", "KnightRider"],
+    ["Kung Fu/", "KungFu"],
+    ["Land of the Giants/", "LandOfTheGiants"],
+    ["Lassie/", "Lassie"],
+    ["Last Man Standing (2011)/", "LastManStanding"],
+    ["Laurel & Hardy/", "LaurelAndHardy"],
+    ["Laverne & Shirley/", "LaverneAndShirley"],
+    ["Leave It To Beaver/", "LeaveItToBeaver"],
+    ["Let's Make A Deal/", "LetsMakeADeal"],
+    ["Little House on the Prairie/", "LittleHouseOnThePrairie"],
+    ["Logan's Run/", "LogansRun"],
+    ["Lone Ranger/", "LoneRanger"],
+    ["Lost In Space/", "LostInSpace"],
+    ["Lou Grant/", "LouGrant"],
+    ["Love Boat/", "LoveBoat"],
+    ["Lucy Show/", "LucyShow"],
+    ["Mary Tyler Moore/", "MaryTylerMoore"],
+    ["MASH/", "MASH"],
+    ["Match Game/", "MatchGame"],
+    ["Mayberry RFD/", "MayberryRFD"],
+    ["McHale's Navy/", "McHalesNavy"],
+    ["Misc/", "MiscTV"],
+    ["Mission Impossible/", "MissionImpossible"],
+    ["Mister Ed/", "MisterEd"],
+    ["Mister Rogers/", "MisterRogers"],
+    ["Monk/", "Monk"],
+    ["Monty Python's Flying Circus/", "MontyPython"],
+    ["Mork & Mindy/", "MorkAndMindy"],
+    ["Mr Wizard/", "MrWizard"],
+    ["Munsters/", "Munsters"],
+    ["Mutual of Omaha's Wild Kingdom/", "MutualOfOmaha"],
+    ["My Favorite Martian/", "MyFavoriteMartian"],
+    ["My Mother the Car/", "MyMotherTheCar"],
+    ["My Three Sons/", "MyThreeSons"],
+    ["Newhart/", "Newhart"],
+    ["Odd Couple/", "OddCouple"],
+    ["One Day at a Time/", "OneDayAtATime"],
+    ["Partridge Family/", "PartridgeFamily"],
+    ["Password/", "Password"],
+    ["Petticoat Junction/", "PetticoatJunction"],
+    ["Phil Silvers Show/", "PhilSilvers"],
+    ["Planet of the Apes/", "PlanetOfTheApes"],
+    ["Police Squad/", "PoliceSquad"],
+    ["Quark/", "Quark"],
+    ["Rhoda/", "Rhoda"],
+    ["Rockford Files/", "RockfordFiles"],
+    ["Room 222/", "Room222"],
+    ["Sanford and Son/", "SanfordAndSon"],
+    ["Smothers Brothers/", "SmothersBrothers"],
+    ["Soap/", "Soap"],
+    ["Space 1999/", "Space1999"],
+    ["Star Trek TOS/", "StarTrek"],
+    ["Supermarket Sweep/", "SupermarketSweep"],
+    ["Survivors/", "Survivors"],
+    ["Tattletales/", "Tattletales"],
+    ["Taxi/", "Taxi"],
+    ["The Adventures of Ozzie and Harriet/", "OzzieAndHarriet"],
+    ["The Best of the Dean Martin Show/", "DeanMartin"],
+    ["The Carol Burnett Show/", "CarolBurnett"],
+    ["The Golden Girls/", "GoldenGirls"],
+    ["The Gong Show/", "GongShow"],
+    ["The Jeffersons/", "Jeffersons"],
+    ["The Life of Riley (1953)/", "LifeOfRiley"],
+    ["The Monkees/", "Monkees"],
+    ["The Office (US)/", "Office"],
+    ["The Paper Chase/", "PaperChase"],
+    ["The Price is Right/", "PriceIsRight"],
+    ["The Starlost (1973)/", "Starlost"],
+    ["The World of Sid & Marty Krofft/", "SidAndMarty"],
+    ["Three's Company/", "ThreesCompany"],
+    ["Three Stooges/", "ThreeStooges"],
+    ["Time Tunnel/", "TimeTunnel"],
+    ["Tremors/", "Tremors"],
+    ["Twilight Zone/", "TwilightZone"],
+    ["UFO/", "UFO"],
+    ["Undersea World of Jacques Cousteau/", "JacquesCousteau"],
+    ["Waltons/", "Waltons"],
+    ["Welcome Back Kotter/", "WelcomeBackKotter"],
+    ["What's My Line/", "WhatsMyLine"],
+    ["Wheel of Fortune/", "WheelOfFortune"],
+    ["Whose Line is it Anyway/", "WhoseLineIsItAnyway"],
+    ["Wild Wild West/", "WildWildWest"],
+    ["Wings/", "Wings"],
+    ["WKRP In Cincinnati/", "WKRP"],
+    ["Wonderful World of Disney/", "WWOD"]
+    )
 
 # cartoon series collections go here
 cartoonlist = (
-                ["Bob's Burgers/", "BobsBurgers"],
-                ["Bump in the Night/", "BumpInTheNight"],
-                ["Chip and Dale/", "ChipAndDale"],
-                ["Fat Albert and the Cosby Kids/", "FatAlbert"],
-                ["Hillbilly Bears/", "HillbillyBears"],
-                ["Huckleberry Hound/", "HuckleberryHound"],
-                ["King of the Hill/", "KingOfTheHill"],
-                ["Looney Tunes/", "LooneyTunes"],
-                ["Marvin the Martian/", "MarvinTheMartian"],
-                ["Misc/", "MiscCartoons"],
-                ["Peanuts/", "Peanuts"],
-                ["Peter Potamus and His Magic Flying Balloon/", "PeterPotamus"],
-                ["Pink Panther/", "PinkPanther"],
-                ["Pixie & Dixie/", "PixieAndDixie"],
-                ["Road Runner/", "RoadRunner"],
-                ["Rocky and Bullwinkle/", "RockyAndBullwinkle"],
-                ["Scooby Doo, Where Are You/", "ScoobyDoo"],
-                ["Secret Squirrel/", "SecretSquirrel"],
-                ["Snagglepuss/", "Snagglepuss"],
-                ["Speed Racer/", "SpeedRacer"],
-                ["Tennessee Tuxedo/", "TennesseeTuxedo"],
-                ["The Yogi Bear Show/", "YogiBear"],
-                ["Tom and Jerry/", "TomAndJerry"],
-                ["Top Cat/", "TopCat"],
-                ["Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
-                ["Underdog/", "Underdog"],
-                ["Unsorted/", "UnsortedCartoons"],
-                ["Woody Woodpecker/", "WoodyWoodpecker"],
-                )
+    ["Bob's Burgers/", "BobsBurgers"],
+    ["Bump in the Night/", "BumpInTheNight"],
+    ["Chip and Dale/", "ChipAndDale"],
+    ["Dennis the Menace/", "DennisTheMenaceCartoon"],
+    ["Fat Albert and the Cosby Kids/", "FatAlbert"],
+    ["Hillbilly Bears/", "HillbillyBears"],
+    ["Huckleberry Hound/", "HuckleberryHound"],
+    ["King of the Hill/", "KingOfTheHill"],
+    ["Looney Tunes/", "LooneyTunes"],
+    ["Marvin the Martian/", "MarvinTheMartian"],
+    ["Misc/", "MiscCartoons"],
+    ["Peanuts/", "Peanuts"],
+    ["Peter Potamus and His Magic Flying Balloon/", "PeterPotamus"],
+    ["Pink Panther/", "PinkPanther"],
+    ["Pixie & Dixie/", "PixieAndDixie"],
+    ["Road Runner/", "RoadRunner"],
+    ["Rocky and Bullwinkle/", "RockyAndBullwinkle"],
+    ["Scooby Doo, Where Are You/", "ScoobyDoo"],
+    ["Secret Squirrel/", "SecretSquirrel"],
+    ["Snagglepuss/", "Snagglepuss"],
+    ["Speed Racer/", "SpeedRacer"],
+    ["Tennessee Tuxedo/", "TennesseeTuxedo"],
+    ["The Yogi Bear Show/", "YogiBear"],
+    ["Tom and Jerry/", "TomAndJerry"],
+    ["Top Cat/", "TopCat"],
+    ["Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
+    ["Underdog/", "Underdog"],
+    ["Unsorted/", "UnsortedCartoons"],
+    ["Woody Woodpecker/", "WoodyWoodpecker"],
+    )
 
 log = ''
 
 
-def natural_sort(x):
-    return [int(y) if y.isdigit() else y for y in re.split(r'(\d+)', x)]
-
-
 def validate_directory(directory):
+    """ check for directory, exit if not present """
     global log
     if not os.path.exists(directory):
         log.error("Directory {} does not exist".format(os.path.abspath(directory)))
 
 
 def duration(file, precision=3):
+    """ get video duration in mS """
     global log
     result = subprocess.Popen(' '.join(['ffprobe',
                                         '-print_format json',
@@ -286,12 +287,13 @@ def duration(file, precision=3):
 
     # output = ''.join(result.stdout.readlines())
     meta = json.loads(output[output.find('{'): output.rfind('}') + 1])
-    duration = float(meta['format']['duration'])
-    duration = round(duration, precision) * 10 ** precision
-    return int(duration)
+    dur = float(meta['format']['duration'])
+    dur = round(dur, precision) * 10 ** precision
+    return int(dur)
 
 
 def is_video(file):
+    """ check if file is a video file """
     global log
     video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
                         '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
@@ -317,6 +319,7 @@ def is_video(file):
 
 
 def create_list(directory, name):
+    """ create a LeeTV media list file """
     global log
 
     validate_directory(directory)
@@ -363,6 +366,7 @@ def create_list(directory, name):
 
 
 def main(quiet, complete):
+    """ main entry point """
     global log
     if quiet:
         log = Log(level='WARNING')
@@ -379,9 +383,9 @@ def main(quiet, complete):
     # this means I added a new series on disk (or renamed one)
     # but forgot to add it to the list above
     for name in os.listdir(basetv):
-        full =  name + os.sep
+        full = name + os.sep
         found = False
-        for i, entry in enumerate(tvlist):
+        for entry in tvlist:
             if full in entry[0]:
                 found = True
         if not found:
@@ -392,13 +396,13 @@ def main(quiet, complete):
                 # continuing
                 input(press_enter)
             except KeyboardInterrupt:
-                sys(exit(1))
+                sys.exit(1)
 
     # do the same for the cartoons
     for name in os.listdir(basecartoon):
-        full =  name + os.sep
+        full = name + os.sep
         found = False
-        for i, entry in enumerate(cartoonlist):
+        for entry in cartoonlist:
             if full in entry[0]:
                 found = True
         if not found:
@@ -406,35 +410,35 @@ def main(quiet, complete):
             try:
                 input(press_enter)
             except KeyboardInterrupt:
-                sys(exit(1))
+                sys.exit(1)
 
     # no need to check the movies since I keep them all in a single tree
 
 
     # now, check for any list items that don't exist on disk.
     # (inverse of above checks)
-    for dir, name in tvlist:
-        path = os.path.join(basetv, dir)
+    for d, name in tvlist:
+        path = os.path.join(basetv, d)
         if not os.path.exists(path):
             log.warning("Directory {} doesn't exist!".format(path))
             try:
                 input(press_enter)
             except KeyboardInterrupt:
-                sys(exit(1))
+                sys.exit(1)
         else:
             if os.path.exists(os.path.join(path, 'complete.txt')):
                 complete_series.append(path)
             else:
                 incomplete_series.append(path)
 
-    for dir, name in cartoonlist:
-        path = os.path.join(basecartoon, dir)
+    for d, name in cartoonlist:
+        path = os.path.join(basecartoon, d)
         if not os.path.exists(path):
             log.warning("Directory {} doesn't exist!".format(path))
             try:
                 input(press_enter)
             except KeyboardInterrupt:
-                sys(exit(1))
+                sys.exit(1)
         else:
             if os.path.exists(os.path.join(path, 'complete.txt')):
                 complete_series.append(path)
@@ -449,34 +453,34 @@ def main(quiet, complete):
     if complete:
         with open('complete_series.txt', 'w') as fp:
             fp.write('Complete series:\n---------------\n\n')
-            for dir in complete_series:
-                fp.write('{}\n'.format(os.path.basename(dir[:-1])))
+            for d in complete_series:
+                fp.write('{}\n'.format(os.path.basename(d[:-1])))
         with open('incomplete_series.txt', 'w') as fp:
             fp.write('Incomplete series:\n-----------------\n\n')
-            for dir in incomplete_series:
-                fp.write('{}\n'.format(os.path.basename(dir[:-1])))
+            for d in incomplete_series:
+                fp.write('{}\n'.format(os.path.basename(d[:-1])))
 
     try:
         input("All directories and lists accounted for.  Press enter to create lists, ^C to exit:\n")
     except KeyboardInterrupt:
-        sys(exit(1))
+        sys.exit(1)
 
     # now, create all the media list files
     numlists = 0
-    for dir, name in tvlist:
-        path = os.path.join(basetv, dir)
+    for d, name in tvlist:
+        path = os.path.join(basetv, d)
         log.info("Processing {} : {}".format(name, path))
         create_list(path, name)
         numlists += 1
 
-    for dir, name in cartoonlist:
-        path = os.path.join(basecartoon, dir)
+    for d, name in cartoonlist:
+        path = os.path.join(basecartoon, d)
         log.info("Processing {} : {}".format(name, path))
         create_list(path, name)
         numlists += 1
 
-    for dir, name in movielist:
-        path = os.path.join(basemovie, dir)
+    for d, name in movielist:
+        path = os.path.join(basemovie, d)
         log.info("Processing {} : {}".format(name, path))
         create_list(path, name)
         numlists += 1
@@ -490,6 +494,6 @@ if __name__ == '__main__':
     parser.add_argument("-q", "--quiet", default=False, action="store_true", help="no messages")
     parser.add_argument("-c", "--complete", default=False, action="store_true", help="print list of complete/incomplete series")
     args = parser.parse_args()
-    quiet = args.quiet
-    complete = args.complete
-    sys.exit(main(quiet, complete))
+    q = args.quiet
+    c = args.complete
+    sys.exit(main(q, c))

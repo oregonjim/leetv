@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" LeeTV duplicate video finder """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -27,16 +28,16 @@
 #  Check for duplicate videos by filename
 #  in the media list files
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-06-13
 #
 import sys
 import os
-import math
 import collections
 import urllib.parse
-
+import random
 
 def get_filelist(filename, shuffle=False):
+    """ get media file list by filename, optionally shuffled """
     f = list()
     t = list()
 
@@ -56,13 +57,14 @@ def get_filelist(filename, shuffle=False):
 
 
 def main():
-    dir = os.path.join(os.getenv('HOME'), '.leetv', 'media')
+    """ main entry point """
+    d = os.path.join(os.getenv('HOME'), '.leetv', 'media')
     founddupes = False
 
-    for filename in os.listdir(dir):
+    for filename in os.listdir(d):
         norm = []
         if filename.endswith('.lst'):
-            mediafile = os.path.join(dir, filename)
+            mediafile = os.path.join(d, filename)
             fn, ft = get_filelist(mediafile, shuffle=False)
 
             # create a list of filenames to compare
@@ -71,7 +73,7 @@ def main():
 
             dupes = [item for item, count in collections.Counter(norm).items() if count > 1]
 
-            if len(dupes):
+            if dupes:
                 founddupes = True
                 print(79 * '-')
                 print(mediafile)

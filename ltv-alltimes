@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Batch version of ltv-times """
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -28,17 +29,18 @@
 #  with run time statistics (min/max/avg),
 #  sorted by runtime
 #
-#  Last update: 2018-05-28
+#  Last update: 2018-06-13
 #
 import sys
 import os
-import argparse
 import urllib.parse
+import random
 
 from leeutils import Log, filewalk
 
 
 def get_filelist(filename, shuffle=False):
+    """ get media file list by filename, optionally shuffled """
     f = list()
     t = list()
 
@@ -58,12 +60,13 @@ def get_filelist(filename, shuffle=False):
 
 
 def num_sort(x):
+    """ sort numerically by first arg only """
     a = x.split(' ')
     return float(a[0])
 
 
-def main(name):
-
+def main():
+    """ main entry point """
     # create a LOG object
     log = Log(level='INFO')
     master = []
@@ -72,30 +75,30 @@ def main(name):
         if series_file.endswith('.lst'):
             fn, ft = get_filelist(series_file)
             target = []
-            min = 99999999
-            max = 0
+            minimum = 99999999
+            maximum = 0
             total = 0
             for i, name in enumerate(fn):
                 runtime = int(ft[i]) / 1000 / 60
                 total += runtime
-                if runtime > max:
-                    max = runtime
-                if runtime < min:
-                    min = runtime
+                if runtime > maximum:
+                    maximum = runtime
+                if runtime < minimum:
+                    minimum = runtime
                 if runtime > 0:
                     # log.info('{} {}'.format(runtime, urllib.parse.unquote(name)))
                     target.append('{:2.1f} mins ({:2.1f} hrs) {}'.format(runtime, runtime / 60, urllib.parse.unquote(name)))
 
-            sortedlist = sorted(target, key=num_sort)
+            # sortedlist = sorted(target, key=num_sort)
 
-            #for x in sortedlist:
-            #    log.info(x)
+            # for x in sortedlist:
+            #     log.info(x)
 
             avg = total / len(fn)
             master.append('Series: {:20}\tCount: {}\tMin: {:2.1f}m\tMax: {:2.1f}m\tAvg: {:2.1f}m'.format(
-                os.path.splitext(os.path.basename(series_file))[0], len(fn), min, max, avg))
+                os.path.splitext(os.path.basename(series_file))[0], len(fn), minimum, maximum, avg))
             # master.append('{:2.1f} m Avg\tSeries: {:20}\tCount: {}\tMin: {:2.1f} m\tMax: {:2.1f} m'.format(
-            #     avg, os.path.splitext(os.path.basename(series_file))[0], len(fn), min, max))
+            #     avg, os.path.splitext(os.path.basename(series_file))[0], len(fn), minimum, maximum))
 
         else:
             log.warning("File {} doesn't belong here!".format(series_file))
@@ -109,8 +112,4 @@ def main(name):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="List media files sorted by time")
-    parser.add_argument("-n", "--name", default="Commercials", help="name of the filelist")
-    args = parser.parse_args()
-    name = args.name
-    sys.exit(main(name))
+    sys.exit(main())

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Archive LeeTV logs and playlists by month """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -26,7 +27,7 @@
 #
 #  Archive old logs and playlists by month
 #
-#  Last update: 2018-06-07
+#  Last update: 2018-06-13
 #
 import sys
 import os
@@ -34,11 +35,11 @@ import argparse
 import urllib.parse
 from datetime import date
 
-from leeutils import *
+from leeutils import Log, filewalk, is_filetype, call
 
 
 def main(level):
-
+    """ main entry point """
     # create a LOG object
     log = Log(level=level)
 
@@ -128,5 +129,5 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Archive LeeTV logs and playlists")
     parser.add_argument("-l", "--loglevel", default="INFO", help="log level")
     args = parser.parse_args()
-    level = args.loglevel.upper()
-    sys.exit(main(level))
+    larg = args.loglevel.upper()
+    sys.exit(main(larg))

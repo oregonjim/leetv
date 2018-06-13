@@ -1,6 +1,6 @@
 """ general utilities module """
 # -*- coding: utf-8 -*-
-#
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-06-11
+#  Last update: 2018-06-13
 #
 import os
 import sys
@@ -32,14 +32,14 @@ import re
 import subprocess
 
 
-def printf(str, *args):
+def printf(string, *args):
     """ C-style printf function """
     # note that setting end to an empty string
     # causes Python's native print function
     # to drop the flush call, so we need
     # to explicitly enable it here in order
     # to get consistent behavior
-    print(str % args, end='', flush=True)
+    print(string % args, end='', flush=True)
 
 
 def is_filetype(file, types):

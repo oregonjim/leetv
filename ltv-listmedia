@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Create LeeTV media list file """
+# pylint: disable=C0103,R0912,R0914,R0915,R1702
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -28,7 +29,7 @@
 #  Alternatively, see ltv-listallmedia for a batch
 #  oriented version for large collections.
 #
-#  Last update: 2018-06-11
+#  Last update: 2018-06-13
 #
 #  File format:  videoFilename : DurationInMilliseconds <newline>
 #
@@ -55,22 +56,20 @@ import subprocess
 import json
 import re
 
-from leeutils import Log
+from leeutils import Log, natural_sort
 
 log = ''
 
 
-def natural_sort(arg):
-    return [int(y) if y.isdigit() else y for y in re.split(r'(\d+)', arg)]
-
-
 def validate_directory(path):
+    """ check for directory, exit if not present """
     global log
     if not os.path.exists(path):
         log.error("Directory {} does not exist".format(os.path.abspath(path)))
 
 
 def duration(file, precision=3):
+    """ get video duration in mS """
     global log
     result = subprocess.Popen(' '.join(['ffprobe',
                                         '-print_format json',
@@ -94,6 +93,7 @@ def duration(file, precision=3):
 
 
 def is_video(file):
+    """ check if file is a video file """
     global log
     video_extensions = ('.mp4', '.m4v', '.mkv', '.avi', '.ogm', '.mov',
                         '.divx', '.ogv', '.webm', '.3gp', '.rmvb',
@@ -120,6 +120,7 @@ def is_video(file):
 
 
 def main(directory, name, append, verbose):
+    """ main entry point """
     global log
     if verbose:
         log = Log(level='INFO')

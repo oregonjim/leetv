@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#
+""" Create LeeTV news and weather videos """
+# pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
 # Copyright © 2018 Jim Lee <jlee54@gmail.com>
@@ -85,16 +86,16 @@
 #  production code.
 #
 #
-#  Last update: 2018-06-03
+#  Last update: 2018-06-13
 #
 import sys
 import os
 import argparse
-import requests
 import subprocess
 import json
 from datetime import date, datetime, timedelta
 
+import requests
 from PIL import Image, ImageDraw, ImageFont
 from bs4 import BeautifulSoup
 
@@ -103,11 +104,11 @@ from selenium.webdriver import Chrome
 
 from pyvirtualdisplay import Display
 
-from leeutils import *
+from leeutils import Log, get_script_directory
 
 
 def main(weather, news, verbose):
-
+    """ main entry point """
     if verbose:
         log = Log(level='INFO')
     else:
@@ -118,9 +119,9 @@ def main(weather, news, verbose):
 
     os.chdir(get_script_directory())
 
-    dir = os.path.join(os.getenv('HOME'), '.leetv')
-    if not os.path.exists(dir):
-        log.error("Directory {} does not exist".format(os.path.abspath(dir)))
+    d = os.path.join(os.getenv('HOME'), '.leetv')
+    if not os.path.exists(d):
+        log.error("Directory {} does not exist".format(os.path.abspath(d)))
 
     if weather:
         # this section will grab a jpg weather picture from a web page.
@@ -139,7 +140,7 @@ def main(weather, news, verbose):
             res = subprocess.Popen(' '.join(['convert',
                                              'weather.jpg',
                                              'weather.png',
-                                             ]), shell=True)
+                                            ]), shell=True)
             res.wait()
         # this section will parse the json data from Weather Underground.
         # requires your own API key (stored in 'key.txt').
@@ -205,7 +206,7 @@ def main(weather, news, verbose):
                                          'weather.png',
                                          '-resize 1280x800!',
                                          'weather2.png',
-                                         ]), shell=True)
+                                        ]), shell=True)
         res.wait()
 
         log.info('Generating video...')
@@ -219,8 +220,8 @@ def main(weather, news, verbose):
                                          '-y',
                                          '-loglevel quiet',
                                          '-pix_fmt yuv420p',
-                                         os.path.join(dir, 'weather.mp4')
-                                         ]), shell=True)
+                                         os.path.join(d, 'weather.mp4')
+                                        ]), shell=True)
         res.wait()
 
     if news:
@@ -259,7 +260,7 @@ def main(weather, news, verbose):
             res = requests.get(url)
             res.raise_for_status()
             articles = []
-            if (res.status_code == 200):
+            if res.status_code == 200:
                 soup = BeautifulSoup(res.content, 'html.parser')
                 # articles are inside <H2> tags with 'title' class
                 l = soup.find_all('h2', class_='title')
@@ -282,7 +283,7 @@ def main(weather, news, verbose):
             d = ImageDraw.Draw(txt)
             # draw header and footer on the canvas
             d.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
-            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255,  220))
+            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255, 220))
             d.text((int(base.size[0] * .15), int(base.size[1] * .85)),
                    today, font=fnt, align='center', fill=(64, 255, 255, 220))
             # now draw a few headlines in the middle of the canvas
@@ -305,7 +306,7 @@ def main(weather, news, verbose):
                                          'news.png',
                                          '-resize 1920x1080!',
                                          'news2.png',
-                                         ]), shell=True)
+                                        ]), shell=True)
         res.wait()
 
         log.info('Generating video...')
@@ -319,8 +320,8 @@ def main(weather, news, verbose):
                                          '-y',
                                          '-loglevel quiet',
                                          '-pix_fmt yuv420p',
-                                         os.path.join(dir, 'news.mp4')
-                                         ]), shell=True)
+                                         os.path.join(d, 'news.mp4')
+                                        ]), shell=True)
         res.wait()
 
     return 0
@@ -331,7 +332,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--news", action="store_true", help="get news, create news video")
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose")
     args = parser.parse_args()
-    weather = args.weather
-    news = args.news
-    verbose = args.verbose
-    sys.exit(main(weather, news, verbose))
+    warg = args.weather
+    narg = args.news
+    varg = args.verbose
+    sys.exit(main(warg, narg, varg))

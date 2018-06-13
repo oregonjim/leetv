@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" LeeTV Tv class module """
+""" LeeTV playlist class module """
 # pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702
 #
 #######################################################################
@@ -21,11 +21,12 @@
 #
 #######################################################################
 #
-#  ltv.py
+#  playlist.py
 #
-#  Main "Tv" class for leetv
+#  Playlist class for leetv
+#  (also validates/creates configuration directory tree and files)
 #
-#  Last update: 2018-05-31
+#  Last update: 2018-06-13
 #
 import sys
 import os
@@ -35,21 +36,11 @@ import shutil
 import random
 import math
 import urllib.parse
-from datetime import date
 from configparser import ConfigParser
 
 
-class Tv:
-    """ Main LeeTV class """
-    # tuple of 1/2 hour time slots in a day - 24hr time format
-    times = ('0000', '0030', '0100', '0130', '0200', '0230',
-             '0300', '0330', '0400', '0430', '0500', '0530',
-             '0600', '0630', '0700', '0730', '0800', '0830',
-             '0900', '0930', '1000', '1030', '1100', '1130',
-             '1200', '1230', '1300', '1330', '1400', '1430',
-             '1500', '1530', '1600', '1630', '1700', '1730',
-             '1800', '1830', '1900', '1930', '2000', '2030',
-             '2100', '2130', '2200', '2230', '2300', '2330')
+class Playlist:
+    """ LeeTV playlist class """
 
     # list of videos to build playlist
     master_name = []
@@ -61,6 +52,8 @@ class Tv:
     ct = []
     # list of commercials already used today
     used = []
+    # filename for storing used commercials
+    used_filename = ''
     # total playlist running time so far (milliseconds)
     running_time_ms = 0
     # maximum time drift due to incomplete commercial fills
@@ -102,9 +95,9 @@ class Tv:
         self._check_prerequisites(self.directory, exclude)
 
         # get list of used commercials and remove them from the master commercial list
-        used_filename = os.path.join(self.directory, 'config', 'used.lst')
-        if os.path.isfile(used_filename):
-            with open(used_filename, 'r') as fp:
+        self.used_filename = os.path.join(self.directory, 'config', 'used.lst')
+        if os.path.isfile(self.used_filename):
+            with open(self.used_filename, 'r') as fp:
                 self.used = fp.readlines()
             for i, line in enumerate(self.used):
                 self.used[i] = line.rstrip('\n')
@@ -170,17 +163,17 @@ class Tv:
 
             # get global default settings
             if settings.has_section('LEETV_SETTINGS'):
-                self.commercials_name = settings.get('LEETV_SETTINGS', 'commercials', fallback = self.commercials_name)
-                self.bumper_video_name = settings.get('LEETV_SETTINGS', 'bumpervideo', fallback = self.bumper_video_name)
-                self.bumper_video_time = settings.get('LEETV_SETTINGS', 'bumpervideotime', fallback = self.bumper_video_time)
-                self.reset_video_name = settings.get('LEETV_SETTINGS', 'resetvideo', fallback = self.reset_video_name)
-                self.reset_video_time = settings.get('LEETV_SETTINGS', 'resetvideotime', fallback = self.reset_video_time)
-                self.fill_video_name = settings.get('LEETV_SETTINGS', 'fillvideo', fallback = self.fill_video_name)
-                self.fill_video_time = settings.get('LEETV_SETTINGS', 'fillvideotime', fallback = self.fill_video_time)
-                self.weather_video_name = settings.get('LEETV_SETTINGS', 'weathervideo', fallback = self.weather_video_name)
-                self.weather_video_time = settings.get('LEETV_SETTINGS', 'weathervideotime', fallback = self.weather_video_time)
-                self.news_video_name = settings.get('LEETV_SETTINGS', 'newsvideo', fallback = self.news_video_name)
-                self.news_video_time = settings.get('LEETV_SETTINGS', 'newsvideotime', fallback = self.news_video_time)
+                self.commercials_name = settings.get('LEETV_SETTINGS', 'commercials', fallback=self.commercials_name)
+                self.bumper_video_name = settings.get('LEETV_SETTINGS', 'bumpervideo', fallback=self.bumper_video_name)
+                self.bumper_video_time = settings.get('LEETV_SETTINGS', 'bumpervideotime', fallback=self.bumper_video_time)
+                self.reset_video_name = settings.get('LEETV_SETTINGS', 'resetvideo', fallback=self.reset_video_name)
+                self.reset_video_time = settings.get('LEETV_SETTINGS', 'resetvideotime', fallback=self.reset_video_time)
+                self.fill_video_name = settings.get('LEETV_SETTINGS', 'fillvideo', fallback=self.fill_video_name)
+                self.fill_video_time = settings.get('LEETV_SETTINGS', 'fillvideotime', fallback=self.fill_video_time)
+                self.weather_video_name = settings.get('LEETV_SETTINGS', 'weathervideo', fallback=self.weather_video_name)
+                self.weather_video_time = settings.get('LEETV_SETTINGS', 'weathervideotime', fallback=self.weather_video_time)
+                self.news_video_name = settings.get('LEETV_SETTINGS', 'newsvideo', fallback=self.news_video_name)
+                self.news_video_time = settings.get('LEETV_SETTINGS', 'newsvideotime', fallback=self.news_video_time)
 
             else:
                 settings.add_section('LEETV_SETTINGS')
@@ -219,7 +212,7 @@ class Tv:
                 path = os.path.join(self.directory, vid)
                 if not os.path.isfile(path):
                     met = False
-                    self.log.warning("{} does not exist!".format(sbv))
+                    self.log.warning("{} does not exist!".format(path))
 
             # create playlist-ready path names
             self.bumper_video = urllib.parse.quote(os.path.join(self.directory, self.bumper_video_name))
@@ -235,6 +228,17 @@ class Tv:
 
     def _create_default_tree(self, directory):
         """ create the base .leetv directory tree and default contents """
+
+        # tuple of 1/2 hour time slots in a day - 24hr time format
+        times = ('0000', '0030', '0100', '0130', '0200', '0230',
+                 '0300', '0330', '0400', '0430', '0500', '0530',
+                 '0600', '0630', '0700', '0730', '0800', '0830',
+                 '0900', '0930', '1000', '1030', '1100', '1130',
+                 '1200', '1230', '1300', '1330', '1400', '1430',
+                 '1500', '1530', '1600', '1630', '1700', '1730',
+                 '1800', '1830', '1900', '1930', '2000', '2030',
+                 '2100', '2130', '2200', '2230', '2300', '2330')
+
         try:
             os.mkdir(directory)
         except FileExistsError:
@@ -252,7 +256,7 @@ class Tv:
         for f in self.schedfiles:
             fn = os.path.join(directory, 'sched', f)
             with open(fn, 'w') as sc:
-                for entry in self.times:
+                for entry in times:
                     sc.write('[{}]\n'.format(entry))
                     sc.write('series = blank\n')
                     sc.write('seq = linear\n\n')
@@ -382,6 +386,13 @@ class Tv:
         # update maximum drift
         if target_ms > self.drift_ms:
             self.drift_ms = target_ms
+
+    def write_used(self):
+        """ write commercial updates to used.lst """
+        self.log.info('Updating used.lst')
+        with open(self.used_filename, 'w') as usedf:
+            for i in self.used:
+                usedf.write(i + '\n')
 
     def write_playlist(self, name, fmt='m3u8'):
         """ create a playlist in one of several formats """
@@ -553,12 +564,6 @@ class Tv:
         seconds = (now - midnight).seconds
         return seconds
 
-    def get_dow(self, today):
-        """ return day of week as three-letter string """
-        days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
-        day = date(today.year, today.month, today.day).weekday()
-        return days[day]
-
     def ms_to_min(self, ms):
         """ convert milliseconds to minutes """
         return ms / 1000 / 60.0
@@ -581,37 +586,3 @@ class Tv:
 
         return '{:02.0f}:{:02.0f}:{:02.0f}'.format(
             math.trunc(thishour), math.trunc(thismin), math.trunc(thissec))
-
-    def timeslot(self):
-        """ generator for main scheduling loop """
-        # iterates through all 48 timeslots in a day
-        # returns dictionary with keys as:
-        #   label  - timeslot label (0000, 0030, 0100, etc.)
-        #   mins   - start of slot as minutes since midnight
-        #   series - name of series scheduled for this slot
-        #   seq    - type of program (linear, random, etc.)
-
-        sched = ConfigParser()
-        sched.read(os.path.join(self.directory, 'sched', self.get_dow(date.today()) + '.ini'))
-
-        for i, x in enumerate(self.times):
-
-            series = sched.get(x, 'series', fallback = 'error')
-
-            # allow several names for a 'blank' slot
-            if series.lower() in ('', 'blank', 'none', 'empty'):
-                series = 'blank'
-
-            seq = sched.get(x, 'seq', fallback='error')
-
-            if seq.isnumeric():
-                # sanity check: if numeric, seq should never be less than '2'
-                if int(seq) < 2:
-                    seq = '2'
-
-            if series == 'error' or seq == 'error':
-                self.log.warning('Error getting schedule entry for slot {}'.format(x))
-                series = 'blank'
-                seq = 'linear'
-
-            yield {'label': x, 'mins': i * 30, 'series': series, 'seq': seq.lower()}
