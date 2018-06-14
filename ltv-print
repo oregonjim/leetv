@@ -191,6 +191,21 @@ def main(current, daily, weekly, full, hardcopy):
 
     if hardcopy:
         # NOTE: printing is non-portable (Unix/Linux/MacOS only)
+        #
+        # NOTE 2:  Most recent HP printers do NOT print the letter sequence "ff"
+        # correctly.  They compress the two f's into the space of one letter,
+        # completely destroying any table formatting. As a workaround,
+        # I pipe the output of ltv-print through the enscript utility,
+        # rather than using this --print option:
+        #
+        # $ ltv-print | enscript -f Courier10 -B -c -h -q -p - | lpr
+        #
+        # This bypasses the HP printer's broken font handling function.
+        # It only matters if any of your TV series names contain "ff"
+        # (e.g. "Andy Griffith", "The Office", "The Jeffersons", etc.)
+        #
+        # Output to the screen is unaffectded.
+        #
         lpr = subprocess.Popen("/usr/bin/lpr", stdin=subprocess.PIPE)
         lpr.stdin.write(table.get_string().encode())
         lpr.wait()

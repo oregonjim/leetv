@@ -67,7 +67,7 @@ def main(level):
         nothing_to_do = False
         archive_list = []
         month_to_archive = pl_files[0][:6]
-        for i, file in enumerate(pl_files):
+        for file in pl_files:
             if file.startswith(month_to_archive):
                 archive_list.append(file)
         for i in archive_list:
@@ -103,7 +103,7 @@ def main(level):
         nothing_to_do = False
         archive_list = []
         month_to_archive = log_files[0][:6]
-        for i, file in enumerate(log_files):
+        for file in log_files:
             if file.startswith(month_to_archive):
                 archive_list.append(file)
         for i in archive_list:

@@ -86,13 +86,13 @@ class Schedule:
                         index += skip
                     if index >= len(fn):
                         index = 0
-                        self.log.info("Series {} rolled over".format(slot['series']))
+                        self.log.warning("Series {} rolled over".format(slot['series']))
                 elif slot['seq'].isnumeric():
                     # multiple episodes in one day
                     index += int(slot['seq']) - 1
                     if index >= len(fn):
                         # end of series, start over
-                        self.log.info("Series {} rolled over".format(slot['series']))
+                        self.log.warning("Series {} rolled over".format(slot['series']))
                         index -= len(fn)
                 else:  # slot['seq'] is 'random'
                     index = random.randrange(0, len(fn))

@@ -400,6 +400,5 @@ for more verbose diagnostics.
   If all is working, you can add ```leetv``` as a cron job to start every day
 at midnight, and ```ltv-getnewsweather``` to run twice an hour (once to get the
 news and once to get the weather).  See the comments at the top of ```leetv```
-for more details.  Enjoy your TV station!  In the meantime, I'll keep
-working on the documentation...
-
+for more details.  You might also want to add ```ltv-logrotate``` as a monthly cron
+job, to keep things tidy.  Enjoy your TV station!

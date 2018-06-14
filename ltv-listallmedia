@@ -227,7 +227,6 @@ tvlist = (
 # cartoon series collections go here
 cartoonlist = (
     ["Bob's Burgers/", "BobsBurgers"],
-    ["Bump in the Night/", "BumpInTheNight"],
     ["Chip and Dale/", "ChipAndDale"],
     ["Dennis the Menace/", "DennisTheMenaceCartoon"],
     ["Fat Albert and the Cosby Kids/", "FatAlbert"],
