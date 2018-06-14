@@ -95,7 +95,7 @@ from playlist import Playlist
 from schedule import Schedule
 
 # program version
-__version__ = '1.20'
+__version__ = '1.21'
 
 
 # main entry point.  START HERE
