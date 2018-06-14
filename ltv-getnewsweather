@@ -169,11 +169,11 @@ def main(weather, news, verbose):
             txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
             fnt = ImageFont.truetype('VeraBd.ttf', 80)
             fnt2 = ImageFont.truetype('VeraBd.ttf', 30)
-            d = ImageDraw.Draw(txt)
+            dr = ImageDraw.Draw(txt)
             # draw header and footer on canvas
-            d.text((int(base.size[0] * .05), 60), "LeeTV Weather", font=fnt, align='center', fill=(64, 0, 64, 220))
-            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 0, 64, 220))
-            d.text((int(base.size[0] * .15), int(base.size[1] * .85)), today, font=fnt, align='center', fill=(64, 0, 64, 220))
+            dr.text((int(base.size[0] * .05), 60), "LeeTV Weather", font=fnt, align='center', fill=(64, 0, 64, 220))
+            dr.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 0, 64, 220))
+            dr.text((int(base.size[0] * .15), int(base.size[1] * .85)), today, font=fnt, align='center', fill=(64, 0, 64, 220))
             # draw 7-day forecast data in the middle
             x = (base.size[0]-80) // 7
             y = int(base.size[1] * .4)
@@ -184,17 +184,17 @@ def main(weather, news, verbose):
                 low = w['low']['fahrenheit']
                 cond = w['conditions']
                 hum = w['avehumidity']
-                d.text((x * i + 40, y - 40), day, font=fnt, fill=(32, 80, 80, 220))
-                d.text((x * i + 40, y + 80), high, font=fnt, fill=(255, 255, 128, 220))
-                d.text((x * i + 40, y + 160), low, font=fnt, fill=(64, 64, 128, 220))
-                d.text((x * i + 40, y + 280), cond, font=fnt2, fill=(0, 0, 0, 220))
-                d.text((x * i + 40, y + 360), str(hum) + '%', font=fnt2, fill=(0, 80, 0, 220))
+                dr.text((x * i + 40, y - 40), day, font=fnt, fill=(32, 80, 80, 220))
+                dr.text((x * i + 40, y + 80), high, font=fnt, fill=(255, 255, 128, 220))
+                dr.text((x * i + 40, y + 160), low, font=fnt, fill=(64, 64, 128, 220))
+                dr.text((x * i + 40, y + 280), cond, font=fnt2, fill=(0, 0, 0, 220))
+                dr.text((x * i + 40, y + 360), str(hum) + '%', font=fnt2, fill=(0, 80, 0, 220))
             # draw today's summary above the 7-day forecast
             for i in range(0, 2):
                 desc = output['forecast']['txt_forecast']['forecastday'][i]['fcttext']
                 titl = output['forecast']['txt_forecast']['forecastday'][i]['title']
-                d.text((x + 40, y - 220 + (i * 80)), titl, font=fnt2, fill=(0, 0, 0, 220))
-                d.text((x + 320, y - 220 + (i * 80)), desc, font=fnt2, fill=(0, 0, 0, 220))
+                dr.text((x + 40, y - 220 + (i * 80)), titl, font=fnt2, fill=(0, 0, 0, 220))
+                dr.text((x + 320, y - 220 + (i * 80)), desc, font=fnt2, fill=(0, 0, 0, 220))
             # combine the layers into a composite image
             out = Image.alpha_composite(base, txt)
             # out.show()
@@ -280,11 +280,11 @@ def main(weather, news, verbose):
             txt = Image.new('RGBA', base.size, (255, 255, 255, 0))
             fnt = ImageFont.truetype('VeraBd.ttf', 80)
             fnt2 = ImageFont.truetype('VeraBd.ttf', 40)
-            d = ImageDraw.Draw(txt)
+            dr = ImageDraw.Draw(txt)
             # draw header and footer on the canvas
-            d.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
-            d.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255, 220))
-            d.text((int(base.size[0] * .15), int(base.size[1] * .85)),
+            dr.text((int(base.size[0] * .05), 60), "LeeTV News", font=fnt, align='center', fill=(64, 255, 255, 220))
+            dr.text((int(base.size[0] * .60), 60), "Lebanon, OR", font=fnt, align='center', fill=(64, 255, 255, 220))
+            dr.text((int(base.size[0] * .15), int(base.size[1] * .85)),
                    today, font=fnt, align='center', fill=(64, 255, 255, 220))
             # now draw a few headlines in the middle of the canvas
             x = int(base.size[0] * .1)
@@ -295,7 +295,7 @@ def main(weather, news, verbose):
             # by the time I make the code bulletproof, Fox will
             # have changed their format anyway...
             for i in range(0, 5):
-                d.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
+                dr.text((80, 320 + y * i), articles[i], font=fnt2, fill=(255, 255, 255, 220))
             # combine the layers into a composite image
             out = Image.alpha_composite(base, txt)
             out.save('news.png')
