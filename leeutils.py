@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-15
 #
 import os
 import sys
@@ -32,14 +32,31 @@ import re
 import subprocess
 
 
-def printf(string, *args):
-    """ C-style printf function """
-    # note that setting end to an empty string
-    # causes Python's native print function
-    # to drop the flush call, so we need
-    # to explicitly enable it here in order
-    # to get consistent behavior
-    print(string % args, end='', flush=True)
+def unique(items):
+    """ return a list of unique items from a list """
+    seen = set()
+    keep = []
+
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            keep.append(item)
+
+    return keep
+
+
+def del_dupes(items):
+    """ delete duplicates from a list in-place """
+    seen = {}
+    pos = 0
+
+    for item in items:
+        if item not in seen:
+            seen[item] = True
+            items[pos] = item
+            pos += 1
+
+    del items[pos:]
 
 
 def is_filetype(file, types):
@@ -49,7 +66,7 @@ def is_filetype(file, types):
     """
     # types is a list of extensions
     # without leading dot
-    # e.g ['bmp, 'jpg', 'png', 'gif']
+    # e.g ['bmp', 'jpg', 'png', 'gif']
     return os.path.splitext(file)[1].lower()[1:] in types
 
 
@@ -131,6 +148,18 @@ def call(args):
     return o.decode('utf-8'), e.decode('utf-8'), p.returncode
 
 
+def which(program):
+    '''
+    Find 'program' in path,
+    return location as path
+    '''
+    o, e, ret = call(['which', program])
+    if not ret:
+        return o.rstrip()
+    else:
+        return None
+
+
 def rename_ini_section(cp, section_from, section_to):
     '''
     Rename a configparser .ini file section
@@ -149,24 +178,34 @@ def rename_ini_section(cp, section_from, section_to):
     cp.remove_section(section_from)
 
 
-def cursor_up(n):
+def printf(string, *args):
+    """ C-style printf function """
+    # note that setting end to an empty string
+    # causes Python's native print function
+    # to drop the flush call, so we need
+    # to explicitly enable it here in order
+    # to get consistent behavior
+    print(string % args, end='', flush=True)
+
+
+def cursor_up(y):
     ''' Move cursor up n lines '''
-    printf("\u001b[%dA", n)
+    printf("\u001b[%dA", y)
 
 
-def cursor_down(n):
+def cursor_down(y):
     ''' Move cursor down n lines '''
-    printf("\u001b[%dB", n)
+    printf("\u001b[%dB", y)
 
 
-def cursor_right(n):
+def cursor_right(x):
     ''' Move cursor right n columns '''
-    printf("\u001b[%dC", n)
+    printf("\u001b[%dC", x)
 
 
-def cursor_left(n):
+def cursor_left(x):
     ''' Move cursor left n columns '''
-    printf("\u001b[%dD", n)
+    printf("\u001b[%dD", x)
 
 
 def cursor_save():

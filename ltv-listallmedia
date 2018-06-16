@@ -25,7 +25,7 @@
 #
 #  A leetv utility program
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-15
 #
 #  Create all media file lists for leetv.  Also warns of directories
 #  not present in the list (and vice-versa).
@@ -75,7 +75,6 @@ tvlist = (
     ["Barney Miller/", "BarneyMiller"],
     ["Batman/", "Batman"],
     ["Battlestar Galactica/", "BattlestarGalactica"],
-    ["Baywatch/", "Baywatch"],
     ["Beat the Clock/", "BeatTheClock"],
     ["Benson/", "Benson"],
     ["Beverly Hillbillies/", "BeverlyHillbillies"],
@@ -132,7 +131,6 @@ tvlist = (
     ["Hollywood Squares/", "HollywoodSquares"],
     ["Home Improvement/", "HomeImprovement"],
     ["Honeymooners/", "Honeymooners"],
-    ["Honey West/", "HoneyWest"],
     ["I Dream of Jeannie/", "IDreamOfJeannie"],
     ["Jack Benny/", "JackBenny"],
     ["Jeopardy/", "Jeopardy"],
@@ -247,12 +245,12 @@ cartoonlist = (
     ["Snagglepuss/", "Snagglepuss"],
     ["Speed Racer/", "SpeedRacer"],
     ["Tennessee Tuxedo/", "TennesseeTuxedo"],
+    ["The Flintstones/", "Flintstones"],
     ["The Yogi Bear Show/", "YogiBear"],
     ["Tom and Jerry/", "TomAndJerry"],
     ["Top Cat/", "TopCat"],
     ["Touche Turtle and Dumm Dumm/", "ToucheTurtle"],
     ["Underdog/", "Underdog"],
-    ["Unsorted/", "UnsortedCartoons"],
     ["Woody Woodpecker/", "WoodyWoodpecker"],
     )
 

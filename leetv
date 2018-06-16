@@ -56,7 +56,7 @@
 #  playlist format with mpv as the media player
 #
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-15
 #
 #
 #  USAGE:
@@ -95,7 +95,7 @@ from playlist import Playlist
 from schedule import Schedule
 
 # program version
-__version__ = '1.21'
+__version__ = '1.22'
 
 
 # main entry point.  START HERE
@@ -104,6 +104,9 @@ def main(args):
 
     # execution timer
     start_time_s = time.time()
+
+    # seed the RNG
+    random.seed(os.urandom(16))
 
     # for tracking memory usage
     if psutil_installed:
@@ -239,6 +242,7 @@ def main(args):
             # see if there's enough time left in this slot
             # to fit the main program video
             if slot['series'] != 'blank':
+                # get the media list for this slot
                 fn, ft = p.get_medialist(slot)
                 # get the next episode to play
                 index = s.get_next_index(slot, fn)
@@ -261,7 +265,7 @@ def main(args):
             # return to main loop and resume normal programming
             continue
         elif offset_s > (slot['mins'] * 60):
-            # we're not up to 'now' yet
+            # we're not up to 'now' yet - this slot is in the past
             log.debug('Skipping slot {}'.format(slot['label']))
             p.running_time_ms += p.min_to_ms(30)
             # return to main loop until we get to 'now' in the schedule
@@ -279,7 +283,7 @@ def main(args):
             #   4) fill rest of slot with commercials
             #
             #   Special proccessing for 'short' videos:
-            #   If a video is less than 15 minutes long,
+            #   If a video is less than 20 minutes long,
             #   try to fill the slot with as many videos
             #   as will fit.
             #
@@ -301,6 +305,7 @@ def main(args):
 
             # Do we have a series programmed for this time slot?
             if slot['series'] != 'blank':
+                # get the media list for this slot
                 fn, ft = p.get_medialist(slot)
                 # get next episode to play
                 index = s.get_next_index(slot, fn)
@@ -310,21 +315,23 @@ def main(args):
                 p.add_video(fn[index], ft[index], series=slot['series'])
                 s.update(slot, fn, index)
 
+                vtime = p.ms_to_min(int(ft[index]))
+
                 # if current video > 30 minutes, abort Commercial fill
                 # and figure out how many time slots to skip before
                 # resuming programming
-                if p.ms_to_min(int(ft[index])) > 30:
+                if vtime > 30:
                     # how many slots to skip before resuming
                     # normal programming
-                    overtime_slots = p.ms_to_min(int(ft[index])) // 30
+                    overtime_slots = vtime // 30
                     log.debug(
                         "Video greater than 30 minutes.  Skipping {} slot(s)".format(
                             overtime_slots))
                     continue
 
-                # if current video is <= 15 minutes, try to fit more
+                # if current video is <= 20 minutes, try to fit more
                 # in this time slot (intended mainly for cartoons)
-                elif p.ms_to_min(int(ft[index])) <= 15:
+                elif vtime <= 20:
                     log.debug("Short video.  Trying to fit more...")
                     target_ms = slot_end_ms - p.running_time_ms
                     while True:
@@ -340,6 +347,7 @@ def main(args):
                             target_ms -= int(ft[index])
                             # don't call s.update() here as these
                             # are only supplemental videos
+                            # s.update(slot, fn, index)
                         else:
                             # no room for another video, go on to next slot
                             break
@@ -377,6 +385,7 @@ def main(args):
                 # see if there's enough time left in this slot
                 # to fit the main program video
                 if slot['series'] != 'blank':
+                    # get the media list for this slot
                     fn, ft = p.get_medialist(slot)
                     # pick a new episode
                     index = s.get_next_index(slot, fn)
@@ -454,5 +463,4 @@ if __name__ == '__main__':
                         help="loglevel (DEBUG|INFO|WARNING|ERROR|OFF) (default: INFO)")
 
     cmdargs = parser.parse_args()
-    random.seed()
     sys.exit(main(cmdargs))

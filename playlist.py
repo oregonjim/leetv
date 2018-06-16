@@ -26,7 +26,7 @@
 #  Playlist class for leetv
 #  (also validates/creates configuration directory tree and files)
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-15
 #
 import sys
 import os
@@ -37,6 +37,8 @@ import random
 import math
 import urllib.parse
 from configparser import ConfigParser
+
+from leeutils import which
 
 
 class Playlist:
@@ -468,11 +470,11 @@ class Playlist:
         host = platform.system()
 
         if name.lower() == 'mpv':
+            if host == 'Linux' or host == 'Darwin':
+                cmd = which('mpv')
+                if not cmd:
+                    self.log.error('mpv not found in path!')
             # *** these need to be checked ***
-            if host == 'Linux':
-                cmd = '/usr/bin/mpv'
-            elif host == 'Darwin':
-                cmd = '/opt/local/bin/mpv'
             elif host == 'Windows':
                 cmd = '"C:\\Program Files\\mpv\\mpv.exe"'
             elif host.startswith('CYGWIN'):
@@ -514,8 +516,11 @@ class Playlist:
             # NOTE: 'cvlc' is the command line variant of VLC
             # that runs without a GUI interface
             if host == 'Linux':
-                cmd = '/usr/bin/cvlc'
-                # cmd = '/usr/bin/vlc'
+                cmd = which('cvlc')
+                if not cmd:
+                    cmd = which('vlc')
+                    if not cmd:
+                        self.log.error('vlc not found in path!')
             elif host == 'Darwin':
                 cmd = '/Applications/VLC.app/Contents/MacOS/VLC'
             elif host == 'Windows':

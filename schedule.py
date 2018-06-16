@@ -25,7 +25,7 @@
 #
 #  Schedule class for leetv
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-15
 #
 import os
 import random
@@ -219,15 +219,15 @@ class Schedule:
                  '1800', '1830', '1900', '1930', '2000', '2030',
                  '2100', '2130', '2200', '2230', '2300', '2330')
 
-        for i, x in enumerate(times):
+        for i, label in enumerate(times):
 
-            series = self.sched.get(x, 'series', fallback='error')
+            series = self.sched.get(label, 'series', fallback='error')
 
             # allow several names for a 'blank' slot
             if series.lower() in ('', 'blank', 'none', 'empty'):
                 series = 'blank'
 
-            seq = self.sched.get(x, 'seq', fallback='error')
+            seq = self.sched.get(label, 'seq', fallback='error')
 
             if seq.isnumeric():
                 # sanity check: if numeric, seq should never be less than '2'
@@ -235,8 +235,8 @@ class Schedule:
                     seq = '2'
 
             if series == 'error' or seq == 'error':
-                self.log.warning('Error getting schedule entry for slot {}'.format(x))
+                self.log.warning('Error getting schedule entry for slot {}'.format(label))
                 series = 'blank'
                 seq = 'linear'
 
-            yield {'label': x, 'mins': i * 30, 'series': series, 'seq': seq.lower()}
+            yield {'label': label, 'mins': i * 30, 'series': series, 'seq': seq.lower()}
