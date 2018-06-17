@@ -56,7 +56,7 @@
 #  playlist format with mpv as the media player
 #
 #
-#  Last update: 2018-06-15
+#  Last update: 2018-06-17
 #
 #
 #  USAGE:
@@ -95,7 +95,7 @@ from playlist import Playlist
 from schedule import Schedule
 
 # program version
-__version__ = '1.22'
+__version__ = '1.23'
 
 
 # main entry point.  START HERE
@@ -336,18 +336,14 @@ def main(args):
                     target_ms = slot_end_ms - p.running_time_ms
                     while True:
                         # try another episode
-                        index += 1
-                        if index >= len(fn):
-                            index = 0
+                        index = s.get_next_index(slot, fn, supplemental=True)
 
                         if int(ft[index]) <= target_ms:
                             # we can fit another one
                             log.debug("Adding video to current slot")
                             p.add_video(fn[index], ft[index], series=slot['series'])
+                            s.update(slot, fn, index, supplemental=True)
                             target_ms -= int(ft[index])
-                            # don't call s.update() here as these
-                            # are only supplemental videos
-                            # s.update(slot, fn, index)
                         else:
                             # no room for another video, go on to next slot
                             break

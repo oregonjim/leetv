@@ -157,9 +157,10 @@ Further, each time slot is filled with randomly selected commercials from
 a pool that you provide (YouTube is a rich source for these, and 'youtube-dl'
 will enable you to save them locally).  Even though the
 commercials are chosen at random, they will not be repeated until the entire
-pool is delpeted, at which point the pool is reset.  Similar to this is the
+pool is depleted, at which point the pool is reset.  Similar to this is the
 'random episode' feature, where movies or TV series' episodes can be chosen at random,
-and are added to a list when chosen so that they will not be repeated.
+and are added to a list when chosen so that they will not be repeated until all
+have been played.
 
   When creating the daily schedules, each 1/2 hour time slot can specify
 a particular series to play in either linear or random order.  Also supported

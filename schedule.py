@@ -25,7 +25,7 @@
 #
 #  Schedule class for leetv
 #
-#  Last update: 2018-06-15
+#  Last update: 2018-06-17
 #
 import os
 import random
@@ -70,14 +70,15 @@ class Schedule:
         day = date(today.year, today.month, today.day).weekday()
         return days[day]
 
-    def get_next_index(self, slot, fn):
+    def get_next_index(self, slot, fn, supplemental=False):
         """ get settings for this slot and pick the next episode (index) """
 
         if self.settings.has_section(slot['series']):
             lastdate = self.settings.get(slot['series'], 'lastdate', fallback='00000000')
             index = self.settings.getint(slot['series'], 'lastplayed', fallback=0)
+            index += self.settings.getint(slot['series'], 'extra', fallback=0)
             skip = self.settings.getint(slot['series'], 'skip', fallback=0)
-            if (lastdate != self.today) or slot['seq'].isnumeric():
+            if (lastdate != self.today) or slot['seq'].isnumeric() or supplemental:
                 # pick a new episode
                 if slot['seq'] == 'linear':
                     if not skip:
@@ -166,31 +167,39 @@ class Schedule:
         return index
 
 
-    def update(self, slot, fn, index):
+    def update(self, slot, fn, index, supplemental=False):
         """ update settings after adding a video """
-        if not slot['seq'].isnumeric():
+
+        if slot['seq'].isnumeric():
+            self.settings.set(slot['series'], 'skip', str(slot['seq']))
+            return
+
+        if supplemental:
+           extra = self.settings.getint(slot['series'], 'extra', fallback=0)
+           self.settings.set(slot['series'], 'extra', str(extra + 1))
+        else:
             self.settings.set(slot['series'], 'lastplayed', str(index))
             self.settings.set(slot['series'], 'lastdate', self.today)
             self.settings.set(slot['series'], 'skip', '0')
-            if not slot['seq'] == 'linear':
-                # seq is 'random': save name so we don't play it again
-                if slot['series'].lower() == 'settings':
-                    self.log.warning("Please do not name a series {}!".format(slot['series']))
-                    self.log.warning("Changes to {} will not be tracked".format(slot['series']))
-                else:
-                    rndseries = ConfigParser()
-                    rndseries_file = os.path.join(self.directory, 'config', slot['series'] + '.ini')
-                    rndseries.read(rndseries_file)
-                    name = os.path.splitext(
-                        os.path.basename(fn[index]))[0]
-                    if not rndseries.has_section(name):
-                        self.log.debug("Marking played episode: {}".format(name))
-                        rndseries.add_section(name)
-                        rndseries.set(name, 'lastdate', self.today)
-                        with open(rndseries_file, 'w') as rndf:
-                            rndseries.write(rndf)
-        else:
-            self.settings.set(slot['series'], 'skip', str(slot['seq']))
+            self.settings.set(slot['series'], 'extra', '0')
+
+        if not slot['seq'] == 'linear':
+            # seq is 'random': save name so we don't play it again
+            if slot['series'].lower() == 'settings':
+                self.log.warning("Please do not name a series {}!".format(slot['series']))
+                self.log.warning("Changes to {} will not be tracked".format(slot['series']))
+            else:
+                rndseries = ConfigParser()
+                rndseries_file = os.path.join(self.directory, 'config', slot['series'] + '.ini')
+                rndseries.read(rndseries_file)
+                name = os.path.splitext(
+                    os.path.basename(fn[index]))[0]
+                if not rndseries.has_section(name):
+                    self.log.debug("Marking played episode: {}".format(name))
+                    rndseries.add_section(name)
+                    rndseries.set(name, 'lastdate', self.today)
+                    with open(rndseries_file, 'w') as rndf:
+                        rndseries.write(rndf)
 
 
     def write(self):

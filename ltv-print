@@ -28,14 +28,16 @@
 #  Generate a printable schedule of "what's playing"
 #  today, this week, or from now until end-of-day.
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-16
 #
 import sys
 import os
 import argparse
 import subprocess
+import platform
 from datetime import date, time, datetime
 from configparser import ConfigParser
+
 from beautifultable import BeautifulTable
 
 
@@ -190,9 +192,7 @@ def main(current, daily, weekly, full, hardcopy):
         table.append_row(row)
 
     if hardcopy:
-        # NOTE: printing is non-portable (Unix/Linux/MacOS only)
-        #
-        # NOTE 2:  Most recent HP printers do NOT print the letter sequence "ff"
+        # NOTE:  Most recent HP printers do NOT print the letter sequence "ff"
         # correctly.  They compress the two f's into the space of one letter,
         # completely destroying any table formatting. As a workaround,
         # I pipe the output of ltv-print through the enscript utility,
@@ -206,9 +206,13 @@ def main(current, daily, weekly, full, hardcopy):
         #
         # Output to the screen is unaffectded.
         #
-        lpr = subprocess.Popen("/usr/bin/lpr", stdin=subprocess.PIPE)
-        lpr.stdin.write(table.get_string().encode())
-        lpr.wait()
+        host = platform.system()
+        if host == 'Linux' or host == 'Darwin':
+            lpr = subprocess.Popen("/usr/bin/lpr", stdin=subprocess.PIPE)
+            lpr.stdin.write(table.get_string().encode())
+            lpr.wait()
+        else:
+            print('Printing is not supported on this operating system.')
     else:
         print(table)
 
