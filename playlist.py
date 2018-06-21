@@ -89,7 +89,7 @@ class Playlist:
                   'fri.ini', 'sat.ini', 'sun.ini')
 
     def __init__(self, logger, exclude):
-        """ Tv object constructor """
+        """ playlist object initializer """
         self.log = logger
 
         # check the config directory tree for validity

@@ -29,7 +29,7 @@
 #  Alternatively, see ltv-listallmedia for a batch
 #  oriented version for large collections.
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-17
 #
 #  File format:  videoFilename : DurationInMilliseconds <newline>
 #
@@ -122,10 +122,8 @@ def is_video(file):
 def main(directory, name, append, verbose):
     """ main entry point """
     global log
-    if verbose:
-        log = Log(level='INFO')
-    else:
-        log = Log(level='OFF')
+
+    log = Log(level='INFO' if verbose else 'OFF')
 
     validate_directory(directory)
     log.info("Reading directory {}".format(directory))

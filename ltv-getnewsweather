@@ -28,9 +28,9 @@
 #  NOTE:  Each section of the code (news/weather) has an
 #         'easy' method (webppage screenshot grab) and a
 #         'harder' method (parse html/json).  Choose
-#         the 'easy' way by changing the two instances of
-#         'if False' to 'if True', and edit the urls to
-#         reflect your preferred news and weather sources.
+#         the 'easy' way with the '-e' option, and edit
+#         the urls to reflect your preferred news and weather
+#         sources.
 #
 #  BASIC IDEA:
 #         HARD WAY:
@@ -86,7 +86,7 @@
 #  production code.
 #
 #
-#  Last update: 2018-06-13
+#  Last update: 2018-06-17
 #
 import sys
 import os
@@ -107,7 +107,7 @@ from pyvirtualdisplay import Display
 from leeutils import Log, get_script_directory
 
 
-def main(weather, news, verbose):
+def main(weather, news, easy, verbose):
     """ main entry point """
     if verbose:
         log = Log(level='INFO')
@@ -126,7 +126,7 @@ def main(weather, news, verbose):
     if weather:
         # this section will grab a jpg weather picture from a web page.
         # no API key needed.
-        if False:
+        if easy:
             # get 7-day forecast image from KPTV
             url = "http://lmgcorporate.com/kptv/weather/ibs_web_7-day.jpg"
             log.info('Downloading page {}...'.format(url))
@@ -228,7 +228,7 @@ def main(weather, news, verbose):
         # this section will just grab a screenshot of a web page
         # advantage - super easy (no parsing html data), but not great to look at
         # on a TV screen from across the room...
-        if False:
+        if easy:
             # url = 'https://www.usatoday.com'
             # url = 'http://www.kezi.com/news/national/'
             # url = 'http://kval.com/news/nation-world'
@@ -330,9 +330,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Create leetv news and weather bumper video")
     parser.add_argument("-w", "--weather", action="store_true", help="get weather, create weather video")
     parser.add_argument("-n", "--news", action="store_true", help="get news, create news video")
+    parser.add_argument("-e", "--easy", action="store_true", help="use 'easy' method")
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose")
     args = parser.parse_args()
     warg = args.weather
     narg = args.news
+    earg = args.easy
     varg = args.verbose
-    sys.exit(main(warg, narg, varg))
+    sys.exit(main(warg, narg, earg, varg))

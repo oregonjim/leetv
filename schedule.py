@@ -81,10 +81,7 @@ class Schedule:
             if (lastdate != self.today) or slot['seq'].isnumeric() or supplemental:
                 # pick a new episode
                 if slot['seq'] == 'linear':
-                    if not skip:
-                        index += 1
-                    else:
-                        index += skip
+                    index += skip if skip else 1
                     if index >= len(fn):
                         index = 0
                         self.log.warning("Series {} rolled over".format(slot['series']))

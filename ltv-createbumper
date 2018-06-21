@@ -48,7 +48,6 @@ def validate_directory(directory):
         sys.exit(1)
 
 
-
 def moveLetters(letters, funcpos):
     """ animate the letters """
     return [letter.set_pos(funcpos(letter. screenpos, i, len(letters)))
@@ -70,7 +69,7 @@ def arrive(screenpos, i, nletters):
 
 
 def vortexin(screenpos, i, nletters):
-    """ swirl lettter in """
+    """ swirl letters in """
     d = lambda t: 1.0 / (0.3 + t**8)  # damping
     a = i * np.pi / nletters  # angle of the movement
     v = rotMatrix(a).dot([-1, 0])
@@ -103,7 +102,7 @@ def main(reset):
     # screensize = (720,460)
     bumper = VideoFileClip("bumper-raw.mp4")
     w, h = screensize = bumper.size
-    print(w, h)
+
     txtClip = TextClip('LeeTV', color='yellow', font="Bitstream-Vera-Sans-Bold",
                        kerning=5, fontsize=100)
 
@@ -143,11 +142,7 @@ def main(reset):
 
     final_clip = CompositeVideoClip([bumper, text_clip])
     final_clip.duration = 5
-    if reset:
-        final_clip.write_videofile(os.path.join(d, 'reset.mp4'), fps=25, codec='mpeg4')
-    else:
-        final_clip.write_videofile(os.path.join(d, 'bumper.mp4'), fps=25, codec='mpeg4')
-
+    final_clip.write_videofile(os.path.join(d, 'reset.mp4' if reset else 'bumper.mp4'), fps=25, codec='mpeg4')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Create leetv bumper video (or commercial reset video)")

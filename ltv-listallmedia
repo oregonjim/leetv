@@ -25,7 +25,7 @@
 #
 #  A leetv utility program
 #
-#  Last update: 2018-06-15
+#  Last update: 2018-06-17
 #
 #  Create all media file lists for leetv.  Also warns of directories
 #  not present in the list (and vice-versa).
@@ -282,7 +282,6 @@ def duration(file, precision=3):
         except UnicodeDecodeError:
             pass
 
-    # output = ''.join(result.stdout.readlines())
     meta = json.loads(output[output.find('{'): output.rfind('}') + 1])
     dur = float(meta['format']['duration'])
     dur = round(dur, precision) * 10 ** precision
@@ -365,10 +364,8 @@ def create_list(directory, name):
 def main(quiet, complete):
     """ main entry point """
     global log
-    if quiet:
-        log = Log(level='WARNING')
-    else:
-        log = Log(level='INFO')
+
+    log = Log(level='WARNING' if quiet else 'INFO')
 
     press_enter = "Press enter to continue anyway, ^C to exit\n"
 

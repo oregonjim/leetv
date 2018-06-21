@@ -24,7 +24,7 @@
 #
 #  Various utility functions
 #
-#  Last update: 2018-06-15
+#  Last update: 2018-06-17
 #
 import os
 import sys
@@ -154,10 +154,7 @@ def which(program):
     return location as path
     '''
     o, e, ret = call(['which', program])
-    if not ret:
-        return o.rstrip()
-    else:
-        return None
+    return None if ret else o.rstrip()
 
 
 def rename_ini_section(cp, section_from, section_to):
