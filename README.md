@@ -123,7 +123,7 @@ Example:
 
 ##### For ltv-config:
 
-```dnf install python-qt5```
+```dnf install python3-qt5```
 
 ##### For ltv-getnewsweather:
 
