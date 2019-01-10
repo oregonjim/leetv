@@ -58,6 +58,7 @@ import re
 
 from leeutils import Log, natural_sort
 
+
 log = ''
 
 
@@ -74,7 +75,7 @@ def duration(file, precision=3):
     result = subprocess.Popen(' '.join(['ffprobe',
                                         '-print_format json',
                                         '-show_format',
-                                        re.escape(file)]),
+                                        '"' + file + '"']),
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
                               shell=True)
@@ -85,7 +86,8 @@ def duration(file, precision=3):
         except UnicodeDecodeError:
             pass
 
-    # output = ''.join(result.stdout.readlines())
+
+#    output = ''.join(result.stdout.readlines())
     meta = json.loads(output[output.find('{'): output.rfind('}') + 1])
     dur = float(meta['format']['duration'])
     dur = round(dur, precision) * 10 ** precision
