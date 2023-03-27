@@ -4,7 +4,7 @@
 # pylint: disable=C0103,C0301,R0912,R0914,R0915,R1702, W0611
 #######################################################################
 #
-# Copyright © 2018 Jim Lee <jlee54@gmail.com>
+# Copyright © 2018-2023 Jim Lee <jlee54@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@
 #  production code.
 #
 #
-#  Last update: 2018-06-17
+#  Last update: 2023-03-27
 #
 import sys
 import os
@@ -128,7 +128,8 @@ def main(weather, news, easy, verbose):
         # no API key needed.
         if easy:
             # get 7-day forecast image from KPTV
-            url = "http://lmgcorporate.com/kptv/weather/ibs_web_7-day.jpg"
+            # url = "http://lmgcorporate.com/kptv/weather/ibs_web_7-day.jpg"
+            url = "https://webpubcontent.gray.tv/kptv/weather/7DayForecast.jpg"
             log.info('Downloading page {}...'.format(url))
             res = requests.get(url)
             res.raise_for_status()
@@ -262,8 +263,8 @@ def main(weather, news, easy, verbose):
             articles = []
             if res.status_code == 200:
                 soup = BeautifulSoup(res.content, 'html.parser')
-                # articles are inside <H2> tags with 'title' class
-                l = soup.find_all('h2', class_='title')
+                # articles are inside <h3> tags with 'title' class
+                l = soup.find_all('h3', class_='title')
                 for article in l:
                     # reduce to just the <a> tags
                     x = article.find('a')
