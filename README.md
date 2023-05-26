@@ -82,7 +82,7 @@ Under MacOS X, the *macports* or *homebrew* package managers can be used.
 
 Under Windows, installation is left as an exercise for the <del>masochist</del> reader.
 
-#### Manditory:
+#### Mandatory:
 
 Python 3 (likely already present)
 
